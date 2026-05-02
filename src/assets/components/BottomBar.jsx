@@ -1,10 +1,10 @@
 import React from 'react'
-import { Brain, CalculatorIcon, CloudUploadIcon, File, LayoutDashboardIcon, User } from 'lucide-react'
+import { Brain, CalculatorIcon, CloudUploadIcon, File, LayoutDashboardIcon, MessageCircle, SparkleIcon, User, WandSparklesIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const BottomBar = ({dark}) => {
   return (
-    <div className={`flex z-10 justify-between items-center fixed bottom-0 rounded-t-3xl left-0 gap-0.5 w-full md:hidden py-3 px-6 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100 text-black' }`}>
+    <div className={`flex z-20 justify-between items-center fixed bottom-0 rounded-t-3xl left-0 gap-0.5 w-full md:hidden py-3 px-6 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100 text-black' }`}>
       
       <NavLink to={'/dashboard'} className={`NavLink font-bold text-[12px] rounded flex flex-col justify-center items-center gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <LayoutDashboardIcon className=''/> Dashboard</NavLink>
 
@@ -12,7 +12,7 @@ const BottomBar = ({dark}) => {
 
       <NavLink to={'/upload'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CloudUploadIcon className=''/> Upload</NavLink>
 
-      <NavLink to={'/ai'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI</NavLink>
+      <NavLink to={'/ai'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <WandSparklesIcon className=''/> Assistance</NavLink>
     </div>
   )
 }

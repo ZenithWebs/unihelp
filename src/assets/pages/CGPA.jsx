@@ -507,14 +507,14 @@ useEffect(() => {
       </h3>
 
       {targetCourses.map((c, i) => (
-        <div key={i} className="flex gap-2 mb-3 items-center">
+        <div key={i} className="grid grid-cols-6 md:flex gap-2 mb-3 items-center">
           <input
             placeholder="Course title"
             value={c.title}
             onChange={(e) =>
               updateTargetCourse(i, "title", e.target.value)
             }
-            className={`p-3 rounded-lg border flex-1 ${
+            className={`p-3 col-span-3 rounded-lg border flex-1 ${
               dark
                 ? "bg-gray-800 border-gray-700"
                 : "bg-gray-100 border-gray-300"
@@ -528,7 +528,7 @@ useEffect(() => {
             onChange={(e) =>
               updateTargetCourse(i, "unit", e.target.value)
             }
-            className={`p-3 rounded-lg border w-24 ${
+            className={`p-3 col-span-2 rounded-lg border w-24 ${
               dark
                 ? "bg-gray-800 border-gray-700"
                 : "bg-gray-100 border-gray-300"

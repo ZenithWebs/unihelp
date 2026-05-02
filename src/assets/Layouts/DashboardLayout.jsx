@@ -1,15 +1,61 @@
-import React from 'react'
-import { Outlet } from 'react-router-dom'
+import React, { useState, useContext} from 'react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import SideBar from '../components/SideBar'
 import BottomBar from './../components/BottomBar';
 import InstallPWAButton from '../components/InstallPWAButton';
+import { auth, db } from "../../firebase/config";
+import { AuthContext } from "../context/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import ProfilePhoto from '../components/ProfilePhoto'
+import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, HouseIcon, LayoutDashboardIcon, LogOut, NotebookPenIcon } from 'lucide-react';
 
-const DashboardLayout = ({dark}) => {
+const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
+
+  const { user } = useContext(AuthContext);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate('/');
+  };
   return (
     <div className='flex gap-0.5'>
       <div>
         <SideBar dark={dark}/>
         <BottomBar dark={dark}/>
+        {menuOpen &&
+          <div className={`fixed md:hidden pb-40 py-10 px-5 left-0 top-10 h-screen w-[70%] z-10 flex flex-col ${dark ? 'bg-slate-900' : 'bg-slate-100'}`}>
+             
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/GPA'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CalculatorIcon className=''/> GPA Calculator</NavLink>
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/CGPA'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <ChartAreaIcon className=''/> CGPA Tracking</NavLink>
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/questions'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <File className=''/> Past Questions</NavLink>
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/upload'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CloudUploadIcon className=''/> Upload Questions</NavLink>
+      
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/lecturenotesmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NotebookPenIcon className=''/> Lecture Note</NavLink>
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/hostelmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <HouseIcon className=''/> Find Hostel</NavLink>
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/ai'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI Assistance</NavLink>
+
+      <div className="flex flex-col shrink-0 mt-auto">
+        <span className="flex overflow-hidden relative items-center">
+          <ProfilePhoto onClick={(e)=> setMenuOpen(false)} user={user}/> <ChevronRight size={23} className={`absolute right-1 rounded-full flex ${dark ? 'bg-slate-900': 'bg-slate-100'} `}/>
+        </span>
+        
+        <span>
+        <p className="flex mt-6 pl-auto text-red-600 font-medium cursor-pointer" onClick={handleLogout}><LogOut/> Logout</p>
+        </span>
+        
+      </div>
+        </div>
+        }
+        
+
       </div>
       <div className={`h-screen max-md:mb-25 w-full pt-20 flex overflow-y-auto no-scrollbar ${
         dark ? "bg-[#0b0f1a] text-white" : "bg-gray-100 text-gray-900"

@@ -13,11 +13,11 @@ import ProtectedRoute from './assets/components/ProtectedRoutes';
 import AiAssistance from './assets/pages/AiAssistance';
 import GPA from './assets/pages/GPA';
 import LectureNotesMarketplace from './assets/pages/LectureNotesMarketplace';
+import { Link } from 'react-router-dom';
+import HostelMarketplace from './assets/pages/HostelMarketplace';
 
 const App = () => {
-    
-
-
+  const [menuOpen, setMenuOpen] = useState(false);
   const [dark, setDark] = useState(false)
     useEffect(() => {
       localStorage.setItem("theme", dark);
@@ -26,21 +26,22 @@ const App = () => {
   return (
     <>
     
-    <Navbar dark={dark}
-          setDark={setDark}/>
+    <Navbar dark={dark} setMenuOpen={setMenuOpen} menuOpen={menuOpen} setDark={setDark}/>
       <div className={dark ? "bg-slate-900 text-white" : "bg-white text-black"}>
         <Routes>
           <Route path='/' element={<Login dark={dark}/>}/>
           <Route path='/register' element={<Signup dark={dark}/>}/>
-          <Route element={<DashboardLayout dark={dark}/>}>
+          <Route element={<DashboardLayout setMenuOpen={setMenuOpen}      menuOpen={menuOpen}  dark={dark}/>}>
             <Route path='/dashboard' element={ <ProtectedRoute><Dashboard dark={dark}/></ProtectedRoute> }/>
             <Route path='/CGPA' element={<ProtectedRoute><CGPA dark={dark}/></ProtectedRoute>}/>
             <Route path='/GPA' element={<ProtectedRoute><GPA dark={dark}/></ProtectedRoute>}/>
             <Route path='/ai' element={<ProtectedRoute><AiAssistance dark={dark}/></ProtectedRoute>}/>
+            <Route path='/hostelmarketplace' element={<ProtectedRoute><HostelMarketplace dark={dark}/></ProtectedRoute>}/>
             <Route path='/upload' element={<ProtectedRoute><Upload dark={dark}/> </ProtectedRoute>}/>
             <Route path='/lecturenotesmarketplace' element={<ProtectedRoute><LectureNotesMarketplace dark={dark}/> </ProtectedRoute>}/>
             <Route path='/profile' element={<ProtectedRoute> <Profile dark={dark}/> </ProtectedRoute>}/>
             <Route path='/questions' element={<ProtectedRoute> <Question dark={dark}/> </ProtectedRoute>}/>
+            <Route path='*' element={ <div className='flex flex-col justify-center items-center bg-inherit fixed top-0 left-0 h-screen w-full'><h1 className='font-black text-6xl text-center'>404 </h1> <p className='font-bold'>Page not found</p> <Link to={'/dashboard'} className='bg-indigo-500 flex text-white p-2.5 rounded'>Dashboard</Link> </div> } />
           </Route>
         </Routes>
         </div>

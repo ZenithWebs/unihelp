@@ -1,5 +1,5 @@
 import { signOut } from "firebase/auth";
-import { Brain, CalculatorIcon, ChevronRight, CloudUploadIcon, File, LayoutDashboardIcon, LogOut, NotebookPenIcon, User } from 'lucide-react'
+import { Brain, CalculatorIcon, ChevronRight, CloudUploadIcon, File, HomeIcon, LayoutDashboardIcon, LogOut, NotebookPenIcon, User } from 'lucide-react'
 import {React, useContext, useEffect, useState} from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from "../../firebase/config";
@@ -28,10 +28,13 @@ const handleLogout = async () => {
       <NavLink to={'/CGPA'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CalculatorIcon className=''/> CGPA Tracking</NavLink>
 
       <NavLink to={'/questions'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <File className=''/> Past Questions</NavLink>
-      
+
+      <NavLink to={'/upload'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CloudUploadIcon className=''/> Upload Question</NavLink>
+
       <NavLink to={'/lecturenotesmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NotebookPenIcon className=''/> Lecture Note</NavLink>
 
-      <NavLink to={'/upload'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CloudUploadIcon className=''/> Upload</NavLink>
+      <NavLink to={'/hostelmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <HomeIcon className=''/> Find Hostel </NavLink>
+      
 
       <NavLink to={'/ai'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI Assistance</NavLink>
 

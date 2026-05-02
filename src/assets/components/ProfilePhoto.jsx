@@ -34,7 +34,7 @@ const ProfilePhoto = ({ profile, user }) => {
         </div>
       )}
 
-      <p className="hidden md:flex text-sm font-medium">{name}</p>
+      <p className="flex text-sm font-medium">{name}</p>
     </div>}
     </>
     
