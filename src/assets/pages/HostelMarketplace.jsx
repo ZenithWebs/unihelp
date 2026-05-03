@@ -18,17 +18,33 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import { addDoc } from "firebase/firestore";
+import {
+  doc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from "firebase/firestore";
+
+import { uploadBytes } from "firebase/storage";
+
+
 
 export default function HostelMarketplace({ dark }) {
     const [hostels, setHostels] = useState([]);
     const [loading, setLoading] = useState(true);
-
+    const [selectedHostel, setSelectedHostel] = useState(null);
+    const [bookmarks, setBookmarks] = useState([]);
+    const [priceFilter, setPriceFilter] = useState("");
+    const [recommended, setRecommended] = useState([]);
+    const [usersMap, setUsersMap] = useState({});
     const [search, setSearch] = useState("");
     const [filterLocation, setFilterLocation] = useState("");
     const [filterPrice, setFilterPrice] = useState("");
     const [showUpload, setShowUpload] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [images, setImages] = useState([]);
+    const [previews, setPreviews] = useState([]);
 
     const [form, setForm] = useState({
     title: "",
@@ -38,8 +54,6 @@ export default function HostelMarketplace({ dark }) {
     description: "",
     });
 
-    const [image, setImage] = useState(null);
-    const [preview, setPreview] = useState(null);
 
   // -----------------------------
   // FETCH HOSTELS
@@ -70,33 +84,56 @@ export default function HostelMarketplace({ dark }) {
   // -----------------------------
   // FILTER SYSTEM
   // -----------------------------
-  const filtered = hostels
-    .filter((h) =>
-      h.title?.toLowerCase().includes(search.toLowerCase()) ||
-      h.location?.toLowerCase().includes(search.toLowerCase())
-    )
-    .filter((h) =>
-      filterLocation ? h.location === filterLocation : true
-    )
-    .filter((h) =>
-      filterPrice ? Number(h.price) <= Number(filterPrice) : true
-    );
+    const filtered = hostels
+  .filter((h) =>
+    (h.title || "").toLowerCase().includes(search.toLowerCase()) ||
+    (h.location || "").toLowerCase().includes(search.toLowerCase()) ||
+    (h.description || "").toLowerCase().includes(search.toLowerCase())
+  )
+  .filter((h) =>
+    filterLocation ? h.location === filterLocation : true
+  )
+  .filter((h) => {
+    if (!filterPrice) return true;
+    return Number(h.price || 0) <= Number(filterPrice);
+  });
 
+  useEffect(() => {
+  if (!hostels?.length) return;
+
+  const sorted = [...hostels]
+    .filter((h) => h.price)
+    .sort((a, b) => Number(a.price) - Number(b.price))
+    .slice(0, 4);
+
+  setRecommended(sorted);
+}, [hostels]);
+ 
   // -----------------------------
   // WHATSAPP LINK
   // -----------------------------
-  const openWhatsApp = (phone, title) => {
-    const message = `Hello, I'm interested in "${title}" hostel listing on CampusFlow.`;
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
-  };
+    const openWhatsApp = (phone, title) => {
+      const message = `Hi, I'm interested in "${title}" on CampusFlow. Is it still available?`;
 
-    const handleImage = (file) => {
-    if (!file) return;
-
-    setImage(file);
-    setPreview(URL.createObjectURL(file));
+      window.open(
+        `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+        "_blank"
+      );
     };
+
+    const handleImages = (files) => {
+  const arr = Array.from(files).filter((f) =>
+    f.type.startsWith("image/")
+  );
+
+  if (arr.length === 0) {
+    alert("Only images allowed");
+    return;
+  }
+
+  setImages(arr);
+  setPreviews(arr.map((f) => URL.createObjectURL(f)));
+};
 
     const handleUpload = async () => {
   if (!auth.currentUser) {
@@ -109,62 +146,111 @@ export default function HostelMarketplace({ dark }) {
     return;
   }
 
-  if (!image) {
-    alert("Upload an image");
+  if (images.length === 0) {
+    alert("Upload at least one image");
     return;
   }
 
   setUploading(true);
 
   try {
-    const storageRef = ref(
-      storage,
-      `hostels/${Date.now()}-${image.name}`
-    );
+    const imageUrls = await uploadImages();
 
-    const uploadTask = uploadBytesResumable(storageRef, image);
+    await addDoc(collection(db, "hostels"), {
+      ...form,
+      images: imageUrls,
+      verified: false,
+      userId: auth.currentUser.uid,
+      createdAt: new Date(),
+    });
 
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const percent =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+    // RESET
+    setUploading(false);
+    setShowUpload(false);
+    setForm({
+      title: "",
+      location: "",
+      price: "",
+      phone: "",
+      description: "",
+    });
+    setImages([]);
+    setPreviews([]);
+    setProgress(0);
 
-        setProgress(Math.round(percent));
-      },
-      console.error,
-      async () => {
-        const url = await getDownloadURL(uploadTask.snapshot.ref);
-
-        await addDoc(collection(db, "hostels"), {
-          ...form,
-          image: url,
-          userId: auth.currentUser.uid,
-          createdAt: new Date(),
-        });
-
-        // RESET
-        setUploading(false);
-        setShowUpload(false);
-        setForm({
-          title: "",
-          location: "",
-          price: "",
-          phone: "",
-          description: "",
-        });
-        setImage(null);
-        setPreview(null);
-        setProgress(0);
-
-        fetchHostels(); // refresh list
-      }
-    );
+    fetchHostels();
   } catch (err) {
     console.log(err);
     setUploading(false);
   }
 };
+
+    const toggleBookmark = async (id) => {
+  if (!auth.currentUser) return alert("Login required");
+
+  const userRef = doc(db, "users", auth.currentUser.uid);
+
+  const isSaved = bookmarks.includes(id);
+
+  try {
+    await updateDoc(userRef, {
+      bookmarks: isSaved
+        ? arrayRemove(id)
+        : arrayUnion(id),
+    });
+
+    setBookmarks((prev) =>
+      isSaved ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+
+  useEffect(() => {
+  if (!hostels.length) return;
+
+  const sorted = [...hostels]
+    .sort((a, b) => a.price - b.price)
+    .slice(0, 4);
+
+  setRecommended(sorted);
+}, [hostels]);
+
+const uploadImages = async () => {
+  const urls = [];
+
+  for (let img of images) {
+    const storageRef = ref(
+      storage,
+      `hostels/${Date.now()}-${img.name}`
+    );
+
+    const uploadTask = uploadBytesResumable(storageRef, img);
+
+    await new Promise((resolve, reject) => {
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const prog =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+
+          setProgress(Math.round(prog));
+        },
+        reject,
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          urls.push(url);
+          resolve();
+        }
+      );
+    });
+  }
+
+  return urls;
+};
+
 
   return (
     <div
@@ -227,6 +313,19 @@ export default function HostelMarketplace({ dark }) {
           </div>
         )}
 
+        <div className="mt-6">
+          <h2 className="font-bold mb-3">🔥 Recommended</h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {recommended.map((h) => (
+              <div key={h.id} className="p-3 rounded-xl bg-indigo-500/10">
+                <p className="text-sm font-semibold">{h.title}</p>
+                <p className="text-xs opacity-70">₦{h.price}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* HOSTELS GRID */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((hostel) => (
@@ -236,20 +335,33 @@ export default function HostelMarketplace({ dark }) {
                 dark
                   ? "bg-[#111827] border-white/10"
                   : "bg-white border-gray-200"
-              }`}
-            >
-              {/* IMAGE */}
-              <img
-                src={hostel.image}
-                alt={hostel.title}
-                className="h-48 w-full object-cover"
-              />
+              }`}>
+
+              <div className="flex gap-2 overflow-x-auto">
+                {Array.isArray(hostel.images) &&
+                  hostel.images.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img}
+                      className="h-40 w-[90%] flex mx-auto mt-2.5 object-cover rounded-xl"
+                    />
+                  ))}
+              </div>
 
               {/* CONTENT */}
               <div className="p-4 space-y-2">
+                <p className="text-xs opacity-70 mt-2">
+                  Agent: {usersMap[hostel.userId]?.name || "Anonymous"}
+                </p>
+                {hostel.verified && (
+                  <span className="text-xs bg-green-500 px-2 py-1 rounded text-white">
+                    Verified
+                  </span>
+                )}
                 <h3 className="font-bold text-lg">
                   {hostel.title}
                 </h3>
+                
 
                 <p className="flex items-center gap-1 text-sm opacity-70">
                   <MapPin size={14} /> {hostel.location}
@@ -349,18 +461,22 @@ export default function HostelMarketplace({ dark }) {
 
         {/* IMAGE */}
         <div>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleImage(e.target.files[0])}
-          />
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => handleImages(e.target.files)}
+        />
 
-          {preview && (
+        <div className="flex gap-2 mt-2 overflow-x-auto">
+          {previews.map((img, i) => (
             <img
-              src={preview}
-              className="mt-3 h-40 w-full object-cover rounded-xl"
+              key={i}
+              src={img}
+              className="h-20 w-28 object-cover rounded"
             />
-          )}
+          ))}
+        </div>
         </div>
 
         {/* PROGRESS */}

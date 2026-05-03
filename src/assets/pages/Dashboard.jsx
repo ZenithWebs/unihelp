@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import Card from './../components/Card';
-import { Activity, Book, Calculator, ChartBar, File, HistoryIcon, Trash2Icon, UploadCloud } from 'lucide-react';
+import { Activity, Book, Calculator, ChartBar, File, HistoryIcon, Home, Trash2Icon, UploadCloud } from 'lucide-react';
 import { AuthContext } from './../context/AuthContext';
 import {
   query,
@@ -80,7 +80,7 @@ const Dashboard = ({dark}) => {
   };
 
   return (
-    <div className='py-2.5  px-5'>
+    <div className='py-2.5  px-5 w-full'>
       <h1 className='font-black text-2xl mb-5'>Welcome Back, { user?.displayName || "Student" } 👋</h1>
 
       <div className={`p-5 rounded-xl my-6 ${dark ? "bg-[#111827]" : "bg-white"}`}>
@@ -123,6 +123,12 @@ const Dashboard = ({dark}) => {
         <Card url={'/questions'} dark={dark} background={'bg-[#4234a5]'} icon={<File/>} title={'Past Questions'} description={'Browse and Download Past Question'} />
         
         <Card url={'/upload'} dark={dark} background={'bg-green-700'} icon={<UploadCloud/>} title={'Upload Document'} description={'Share  questions & important files with others'} />
+
+        <Card url={'/hostelmarketplace'} dark={dark} background={'bg-indigo-500'} icon={<Home/>} title={'Hostel Market Place'} description={'Find verify hostel near your campus'} />
+
+        <Card url={'/upload'} dark={dark} background={'bg-yellow-500'} icon={<UploadCloud/>} title={'Lecture Notes'} description={'Share Lecture Notes & request for lecture note from others'} />
+
+
       </div>
       <SmartFeed dark={dark}/>
       

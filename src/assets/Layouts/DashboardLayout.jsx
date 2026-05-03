@@ -8,7 +8,7 @@ import { AuthContext } from "../context/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import ProfilePhoto from '../components/ProfilePhoto'
-import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, HouseIcon, LayoutDashboardIcon, LogOut, NotebookPenIcon } from 'lucide-react';
+import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, HouseIcon, LayoutDashboardIcon, LogOut, NewspaperIcon, NotebookPenIcon } from 'lucide-react';
 
 const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
 
@@ -40,6 +40,8 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
 
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/hostelmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <HouseIcon className=''/> Find Hostel</NavLink>
 
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/newsfeed'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NewspaperIcon className=''/> Smart Feeds</NavLink>
+
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/ai'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI Assistance</NavLink>
 
       <div className="flex flex-col shrink-0 mt-auto">
@@ -57,7 +59,7 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
         
 
       </div>
-      <div className={`h-screen max-md:mb-25 w-full pt-20 flex overflow-y-auto no-scrollbar ${
+      <div onClick={(e)=> setMenuOpen(false)} className={`h-screen max-md:mb-25 w-full pt-20 flex overflow-y-auto no-scrollbar ${
         dark ? "bg-[#0b0f1a] text-white" : "bg-gray-100 text-gray-900"
       }`}>
         <InstallPWAButton />

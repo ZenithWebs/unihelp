@@ -1,5 +1,5 @@
 import React from 'react'
-import { Brain, CalculatorIcon, CloudUploadIcon, File, LayoutDashboardIcon, MessageCircle, SparkleIcon, User, WandSparklesIcon } from 'lucide-react'
+import { Brain, CalculatorIcon, CloudUploadIcon, File, LayoutDashboardIcon, MessageCircle, NewspaperIcon, SparkleIcon, User, WandSparklesIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const BottomBar = ({dark}) => {
@@ -10,7 +10,7 @@ const BottomBar = ({dark}) => {
 
       <NavLink to={'/questions'} className={`NavLink text-[12px] justify-center items-center flex-col font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <File className=''/> Questions</NavLink>
 
-      <NavLink to={'/upload'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CloudUploadIcon className=''/> Upload</NavLink>
+      <NavLink to={'/newsfeed'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NewspaperIcon className=''/> Feeds</NavLink>
 
       <NavLink to={'/ai'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <WandSparklesIcon className=''/> Assistance</NavLink>
     </div>

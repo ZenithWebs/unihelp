@@ -16,8 +16,8 @@ import {
   BrainIcon,
   TargetIcon,
   BookCopyIcon,
+  Plus,
 } from "lucide-react";
-import { model } from "../utils/gemini";
 import { auth, db } from "../../firebase/config";
 import {
   doc,
@@ -27,6 +27,8 @@ import {
   query,
   where,
   getDocs,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
@@ -46,10 +48,10 @@ const AIAssistant = ({ dark }) => {
   const [chatId, setChatId] = useState(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [stop, setStop] = useState(false);
-  const [file, setFile] = useState(null);
   const [fileText, setFileText] = useState("");
+  const [file, setFile] = useState(null);
   const chatRef = useRef(null);
+  const controllerRef = useRef(null);
   const [pdfChunks, setPdfChunks] = useState([]);
   const [activeDoc, setActiveDoc] = useState(null);
 
@@ -62,34 +64,42 @@ const AIAssistant = ({ dark }) => {
 
   
   const saveChat = async (msgs) => {
-    if (!auth.currentUser) return;
+  if (!auth.currentUser) return;
 
-    try {
-      if (!chatId) {
-        const newChat = await addDoc(collection(db, "aiChats"), {
-          userId: auth.currentUser.uid,
-          messages: msgs,
-          createdAt: new Date(),
-        });
-        setChatId(newChat.id);
-      } else {
-        await setDoc(doc(db, "aiChats", chatId), {
-          userId: auth.currentUser.uid,
-          messages: msgs,
-          updatedAt: new Date(),
-        });
-      }
-    } catch (err) {
-      console.log("Save error:", err);
+  // 🔥 CLEAN DATA (NO undefined allowed)
+  const cleanMessages = msgs.map((m) => ({
+    role: m?.role || "ai",
+    text: m?.text || "",
+  }));
+
+  try {
+    if (!chatId) {
+      const newChat = await addDoc(collection(db, "aiChats"), {
+        userId: auth.currentUser.uid,
+        messages: cleanMessages,
+        createdAt: new Date(),
+      });
+      setChatId(newChat.id);
+    } else {
+      await setDoc(doc(db, "aiChats", chatId), {
+        userId: auth.currentUser.uid,
+        messages: cleanMessages,
+        updatedAt: new Date(),
+      });
     }
-  };
+  } catch (err) {
+    console.log("Save error:", err);
+  }
+};
 
   const loadChat = async () => {
     if (!auth.currentUser) return;
 
     const q = query(
       collection(db, "aiChats"),
-      where("userId", "==", auth.currentUser.uid)
+      where("userId", "==", auth.currentUser.uid),
+      orderBy("createdAt", "desc"),
+      limit(1)
     );
 
     const snap = await getDocs(q);
@@ -125,9 +135,9 @@ const AIAssistant = ({ dark }) => {
 
 
   const stopGeneration = () => {
-    setStop(true);
-    setLoading(false);
-  };
+  controllerRef.current?.abort();
+  setLoading(false);
+};
   
   
   const extractPDFText = async (file) => {
@@ -198,76 +208,101 @@ const handleFileUpload = async (e) => {
   setLoading(false);
 };
 
-const handleSend = async () => {
+
+  const handleSend = async () => {
   if (!input.trim()) return;
 
   const newMessages = [...messages, { role: "user", text: input }];
+  const recentMessages = newMessages.slice(-6);
+
   setMessages(newMessages);
   setInput("");
   setLoading(true);
-  setStop(false);
+
+  if (controllerRef.current) {
+    controllerRef.current.abort(); 
+  }
+
+  controllerRef.current = new AbortController();
+  const signal = controllerRef.current.signal;
 
   try {
     let contextText = "";
 
     if (pdfChunks.length > 0) {
-      const query = input.toLowerCase();
+      const q = input.toLowerCase();
 
-      const relevantChunks = pdfChunks
-        .filter((chunk) => chunk.toLowerCase().includes(query))
-        .slice(0, 3);
+      const relevant = pdfChunks
+  .map((chunk) => ({
+    chunk,
+    score: chunk.toLowerCase().split(q).length,
+  }))
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 3)
+  .map((x) => x.chunk);
 
       contextText =
-        relevantChunks.length > 0
-          ? relevantChunks.join("\n")
+        relevant.length > 0
+          ? relevant.join("\n")
           : pdfChunks.slice(0, 2).join("\n");
     }
 
-    const prompt = `
-You are a smart university tutor.
+    const token = await auth.currentUser.getIdToken();
 
-Rules:
-- Explain simply
-- Use examples
-- Help with CGPA, coding, engineering
-- If from document, answer ONLY from document
+    const res = await fetch("http://localhost:3001/api/ai/chat", {
+      method: "POST",
+      signal: controllerRef.current.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        messages: recentMessages || [],
+        context: contextText || "",
+      })
+      
+    });
+    console.log("SEND:", {
+      messages: recentMessages,
+      context: contextText,
+    });
 
-${contextText ? `Document Context:\n${contextText}\n` : ""}
+    if (!res.ok) throw new Error("Backend error");
 
-Conversation:
-${newMessages
-  .map((m) => `${m.role === "user" ? "User" : "AI"}: ${m.text}`)
-  .join("\n")}
+    const data = await res.json();
 
-AI:
-`;
+    const aiText = data?.text || "⚠️ No response from AI";
 
-    const result = await model.generateContent([prompt]);
-
-    const response = result.response.text();
-
-    const updatedMessages = [
+    const updated = [
       ...newMessages,
-      { role: "ai", text: response },
+      { role: "ai", text: aiText },
     ];
 
-    setMessages(updatedMessages);
+    setMessages(updated);
+    await saveChat(updated);
 
-    saveChat(updatedMessages);
   } catch (err) {
     console.log(err);
+
     setMessages((prev) => [
       ...prev,
-      {
-        role: "ai",
-        text: "⚠️ AI error. Try again.",
-      },
+      { role: "ai", text: "⚠️ Server error. Try again." },
     ]);
   }
 
   setLoading(false);
 };
 
+
+useEffect(() => {
+  if (!messages.length) return;
+
+  const timeout = setTimeout(() => {
+    saveChat(messages);
+  }, 1500);
+
+  return () => clearTimeout(timeout);
+}, [messages]);
 
   return (
     <div
@@ -368,10 +403,10 @@ AI:
             </div>
           )}
         </div>
-        <div className="flex justify-between items-center p-2.5">
+        <div className="flex justify-between items-center max-md:flex-col p-2.5">
           <div className="flex items-center gap-2">
-            <label className="flex gap-1.5 h-10 w-40 justify-center items-center bg-indigo-600 rounded-2xl text-white cursor-pointer text-sm ">
-              <Link2Icon size={23}/> Upload PDF
+            <label className="flex gap-1.5 h-10 w-25 justify-center items-center bg-indigo-600 rounded text-white cursor-pointer text-sm ">
+              <Plus size={23}/> Upload
               <input
                 type="file"
                 accept="application/pdf"
@@ -380,16 +415,11 @@ AI:
               />
             </label>
 
-            {file && (
-              <span className="text-xs opacity-70">
-                {file.name}
-              </span>
-            )}
           </div>
 
 
           {activeDoc && (
-            <div className="flex flex-wrap gap-2 mt-2 text-xs">
+            <div className="flex gap-2 mt-2 text-xs">
               <button
                 onClick={() => setInput("Summarize this document")}
                 className="flex gap-1.5 items-center font-medium px-3 py-1 bg-indigo-500 text-white rounded"

@@ -7,43 +7,31 @@ import {
   ExternalLink,
   Loader2,
   PinIcon,
+  Heart,
+  X,
 } from "lucide-react";
 import { db, auth } from "../../firebase/config";
 import {
-  collection,
-  getDocs,
   updateDoc,
   doc,
   arrayUnion,
 } from "firebase/firestore";
+import { fetchNigeriaNews } from "../service/newsService";
 
 export default function SmartFeed({ dark }) {
   const [posts, setPosts] = useState([]);
+  const [post, setPost] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState([]);
   const [trending, setTrending] = useState([]);
-const [savedPosts, setSavedPosts] = useState([]);
-const [activeTag, setActiveTag] = useState("All");
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [activeTag, setActiveTag] = useState("All");
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [likes, setLikes] = useState({});
+  const [saved, setSaved] = useState({});
 
-  // ---------------- FETCH POSTS ----------------
-  const fetchFeed = async () => {
-    setLoading(true);
 
-    const snap = await getDocs(collection(db, "feed"));
-
-    const data = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    setPosts(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchFeed();
-  }, []);
 
   // ---------------- FILTER ----------------
   const filtered = posts.filter((p) =>
@@ -76,64 +64,185 @@ const [activeTag, setActiveTag] = useState("All");
   setTrending(sorted.slice(0, 5)); // top 5
 };
 
-const fetchPosts = async () => {
-  setLoading(true);
-
-  const snap = await getDocs(collection(db, "smartFeed"));
-  const data = snap.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  setPosts(data);
-  computeTrending(data);
-
-  // 💾 Save locally (cache)
-  localStorage.setItem("campusFeedCache", JSON.stringify(data));
-
-  setLoading(false);
-};
-
-useEffect(() => {
-  const cache = localStorage.getItem("campusFeedCache");
-
-  if (cache) {
-    const parsed = JSON.parse(cache);
-    setPosts(parsed);
-    computeTrending(parsed);
-  }
-
-  fetchPosts();
-}, []);
-
-
-const tags = ["All", "Scholarship", "Education", "Tech"];
+  
+const tags = [
+  "All",
+  "Politics",
+  "Education",
+  "Exams",
+  "Scholarships",
+  "Tech",
+  "Economy",
+  "Campus News"
+];
 
 const filteredPosts = posts.filter((post) => {
   const matchSearch =
     post.title?.toLowerCase().includes(search.toLowerCase()) ||
-    post.content?.toLowerCase().includes(search.toLowerCase());
+    post.description?.toLowerCase().includes(search.toLowerCase());
 
   const matchTag =
     activeTag === "All" || post.tag === activeTag;
 
   return matchSearch && matchTag;
 });
-const toggleSave = async (postId) => {
-  if (!auth.currentUser) return;
+const nigeriaKeywords = [
+  "nigeria",
+  "jamb",
+  "waec",
+  "neco",
+  "scholarship",
+  "university",
+  "admission",
+  "fg",
+  "lagos",
+  "abuja",
+  "student",
+  "economy",
+  "president",
+  "budget"
+];
 
-  const refDoc = doc(db, "users", auth.currentUser.uid);
 
-  await updateDoc(refDoc, {
-    savedPosts: arrayUnion(postId),
-  });
 
-  setSavedPosts((prev) =>
-    prev.includes(postId)
-      ? prev.filter((id) => id !== postId)
-      : [...prev, postId]
-  );
+
+const getStudentTag = (text = "") => {
+  const t = text.toLowerCase();
+
+  // 🎓 EDUCATION
+  if (t.includes("jamb") || t.includes("utme") || t.includes("admission"))
+    return "Admissions";
+
+  if (t.includes("waec") || t.includes("neco") || t.includes("exam"))
+    return "Exams";
+
+  if (t.includes("scholarship") || t.includes("fellowship"))
+    return "Scholarships";
+
+  if (t.includes("nysc"))
+    return "NYSC";
+
+  if (
+    t.includes("university") ||
+    t.includes("college") ||
+    t.includes("campus") ||
+    t.includes("student")
+  )
+    return "Campus News";
+
+  if (t.includes("grant") || t.includes("funding"))
+    return "Funding";
+
+  // 🏛 POLITICS
+  if (
+    t.includes("president") ||
+    t.includes("government") ||
+    t.includes("minister") ||
+    t.includes("senate") ||
+    t.includes("policy")
+  )
+    return "Politics";
+
+  // 💻 TECH
+  if (
+    t.includes("tech") ||
+    t.includes("ai") ||
+    t.includes("startup") ||
+    t.includes("software") ||
+    t.includes("app")
+  )
+    return "Tech";
+
+  // 💰 BUSINESS
+  if (
+    t.includes("economy") ||
+    t.includes("naira") ||
+    t.includes("bank") ||
+    t.includes("finance") ||
+    t.includes("business")
+  )
+    return "Business";
+
+  // ⚽ SPORTS
+  if (
+    t.includes("football") ||
+    t.includes("match") ||
+    t.includes("league") ||
+    t.includes("sport")
+  )
+    return "Sports";
+
+  return "General";
 };
+
+
+
+  useEffect(() => {
+  const loadNews = async () => {
+    setLoading(true);
+
+    try {
+      const data = await fetchNigeriaNews();
+      const generateThumbnail = (title = "") => {
+      const encoded = encodeURIComponent(title);
+
+      return `https://source.unsplash.com/600x400/?education,university,students,${encoded}`;
+    };
+      const formatted = data.map((item, index) => ({
+        id: item.id || index,
+        title: item.title,
+        description: item.description,
+        link: item.link,
+        image: item.image || generateThumbnail(item.title),
+        //type: "Education",
+        tag: getStudentTag(item.title + " " + item.description),
+      }));
+      setPosts(formatted);
+      computeTrending(formatted);
+
+      localStorage.setItem(
+        "campusFeedCache",
+        JSON.stringify(formatted)
+      );
+    } catch (err) {
+      console.error("Failed to load education news", err);
+    }
+
+    setLoading(false);
+  };
+
+  loadNews();
+}, []);
+const toggleLike = (id) => {
+  setLikes((prev) => ({
+    ...prev,
+    [id]: prev[id] ? prev[id] - 1 : 1,
+  }));
+};
+
+const toggleSave = (id) => {
+  setSaved((prev) => ({
+    ...prev,
+    [id]: !prev[id],
+  }));
+};
+
+
+
+const rankedPosts = [...filteredPosts].sort((a, b) => {
+  const scoreA =
+    (likes[a.id] || 0) * 2 +
+    (saved[a.id] ? 3 : 0);
+
+  const scoreB =
+    (likes[b.id] || 0) * 2 +
+    (saved[b.id] ? 3 : 0);
+
+  return scoreB - scoreA;
+});
+
+
+
 
   return (
     <div className={`${dark ? "bg-[#0b0f19] text-white" : "bg-gray-100"} min-h-screen py-6`}>
@@ -145,9 +254,9 @@ const toggleSave = async (postId) => {
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold">CampusFlow Smart Feed</h1>
+          <h1 className="text-2xl font-bold">Smart Feed</h1>
           <p className="text-sm opacity-70">
-            News, scholarships, and opportunities curated for you
+            News, techs and opportunities curated for you
           </p>
         </div>
       </div>
@@ -156,7 +265,7 @@ const toggleSave = async (postId) => {
       <div className={`flex items-center gap-2 p-3 rounded-xl mb-6 ${dark ? "bg-[#111827]" : "bg-white"}`}>
         <Search size={18} />
         <input
-          placeholder="Search news, scholarships..."
+          placeholder="Search news, techs..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="bg-transparent outline-none w-full"
@@ -184,64 +293,166 @@ const toggleSave = async (postId) => {
       {/* LOADING */}
       {loading && (
         <div className="flex justify-center mt-10">
-          <Loader2 className="animate-spin" />
+          <Loader2 className="animate-zoom" />
         </div>
       )}
 
       {/* FEED */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((post) => (
-          <div
-            key={post.id}
-            className={`p-4 rounded-2xl border ${
-              dark ? "border-white/10 bg-white/5" : "bg-white"
-            }`}
-          >
-            <h3 className="font-bold text-lg">{post.title}</h3>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 mt-5 gap-4">
+        {rankedPosts.map((post) => (
+          <div onClick={() => setSelectedPost(post)} className="cursor-pointer"  key={post.id}>
+    <div
+      
+      className={`group rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
+        dark
+          ? "border-white/10 bg-linear-to-b from-white/5 to-white/0"
+          : "border-gray-200 bg-white"
+      }`}
+    >
+    {/* IMAGE */}
+    <div className="relative w-full h-44 overflow-hidden">
+      <img
+        src={post.image}
+        alt={post.title}
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
 
-            <p className="text-sm opacity-70 mt-2">
-              {post.description?.slice(0, 120)}...
-            </p>
+      {/* overlay gradient */}
+      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
 
-            <div className="flex items-center justify-between mt-4">
+      {/* TAG */}
+      <span className="absolute top-3 left-3 text-xs px-2 py-1 rounded-full bg-indigo-500 text-white">
+        {post.tag}
+      </span>
+    </div>
 
-              {/* TYPE */}
-              <span className="text-xs bg-indigo-500 px-2 py-1 rounded">
-                {post.type}
-              </span>
+    {/* CONTENT */}
+    <div className="p-4">
+      <h3 className="font-bold text-lg leading-snug line-clamp-2">
+        {post.title}
+      </h3>
 
-              {/* TREND */}
-              <div className="flex items-center gap-1 text-orange-400">
-                <TrendingUp size={14} /> Trending
-              </div>
-            </div>
+      <p className="text-sm mt-2 opacity-70 line-clamp-3">
+        {post.description}
+      </p>
 
-            {/* ACTIONS */}
-            <div className="flex gap-2 mt-4">
-              <a
-                href={post.link}
-                target="_blank"
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-blue-600 text-white"
-              >
-                <ExternalLink size={16} />
-                Open
-              </a>
+      {/* META */}
+      <div className="flex items-center justify-between mt-4 text-xs opacity-80">
+        <span className="flex items-center gap-1">
+          <TrendingUp size={14} className="text-orange-400" />
+          Trending
+        </span>
 
-              <button
-                onClick={() => toggleBookmark(post.id)}
-                className="px-3 py-2 rounded-xl bg-gray-700 text-white"
-              >
-                <Bookmark size={16} />
-              </button>
-
-              <button onClick={() => toggleSave(post.id)}
-                className="text-xs px-3 py-1 rounded bg-yellow-500 text-white">
-                <PinIcon/> Save
-                </button>
-            </div>
-          </div>
-        ))}
+        <span className="px-2 py-1 rounded bg-indigo-500/20 text-indigo-300">
+          {post.type}
+        </span>
       </div>
+
+      {/* ACTIONS */}
+      <div className="flex gap-2 mt-4">
+        <a
+          href={post.link}
+          target="_blank"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition"
+        >
+          <ExternalLink size={16} />
+          Open
+        </a>
+
+        <button onClick={(e) => {
+          e.stopPropagation();
+          toggleLike(post.id);
+        }}>
+          <Heart
+            fill={likes[post.id] ? "red" : "none"}
+            size={24}/>
+          {likes[post.id] || 0}
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSave(post.id);
+          }}>
+          <PinIcon
+            size={24}
+            fill={saved[post.id] ? "orange" : "none"}/>
+        </button>
+      </div>
+      </div>
+    </div>
+  </div>
+))}
+      </div>
+      {selectedPost && (
+  <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+    
+    <div className="w-full max-w-2xl bg-white text-black rounded-2xl overflow-hidden relative">
+
+      {/* CLOSE */}
+      <button
+        onClick={() => setSelectedPost(null)}
+        className="absolute top-3 right-3 bg-black/70 text-white px-3 py-1 rounded-full"
+      >
+        <X size={30}/>
+      </button>
+
+      {/* IMAGE */}
+      <img
+        src={selectedPost.image}
+        className="w-full h-60 object-cover"
+      />
+
+      {/* CONTENT */}
+      <div className="p-4">
+        <h2 className="text-xl font-bold">
+          {selectedPost.title}
+        </h2>
+
+        <p className="mt-3 text-sm text-gray-700">
+          {selectedPost.description}
+        </p>
+
+        {/* ACTIONS */}
+        <div className="flex gap-2 mt-5">
+          <a
+            href={selectedPost.link}
+            target="_blank"
+            className="flex-1 bg-blue-600 text-white py-2 rounded-xl text-center"
+          >
+            Open Source
+          </a>
+
+          <div className="flex items-center gap-3 mt-3 text-sm">
+
+            <button onClick={(e) => {
+                e.stopPropagation();
+                toggleLike(post.id);
+              }}>
+              <Heart
+                fill={likes[post.id] ? "red" : "none"}
+                size={24}/>
+              {likes[post.id] || 0}
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSave(post.id);
+              }}>
+              <PinIcon
+                size={24}
+                fill={saved[post.id] ? "orange" : "none"}/>
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+)}
     </div>
   );
 }

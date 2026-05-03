@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI("AIzaSyD9q7oBhwbcpwDb4PYfB7bR8hKHr_Ug5Y0");
+const genAI = new GoogleGenerativeAI(
+  import.meta.env.VITE_GEMINI_API_KEY
+);
 
 export const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
+  model: "gemini-1.5-flash", // safer stable model
 });
-//AIzaSyD9q7oBhwbcpwDb4PYfB7bR8hKHr_Ug5Y0
-//AIzaSyAtXiNLa8JElS8CsMH91uL1gpw63GPJKks

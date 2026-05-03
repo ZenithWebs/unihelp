@@ -15,6 +15,7 @@ import GPA from './assets/pages/GPA';
 import LectureNotesMarketplace from './assets/pages/LectureNotesMarketplace';
 import { Link } from 'react-router-dom';
 import HostelMarketplace from './assets/pages/HostelMarketplace';
+import NewsFeed from './assets/pages/NewsFeed';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -40,6 +41,7 @@ const App = () => {
             <Route path='/upload' element={<ProtectedRoute><Upload dark={dark}/> </ProtectedRoute>}/>
             <Route path='/lecturenotesmarketplace' element={<ProtectedRoute><LectureNotesMarketplace dark={dark}/> </ProtectedRoute>}/>
             <Route path='/profile' element={<ProtectedRoute> <Profile dark={dark}/> </ProtectedRoute>}/>
+            <Route path='/newsfeed' element={<ProtectedRoute> <NewsFeed dark={dark}/> </ProtectedRoute>}/>
             <Route path='/questions' element={<ProtectedRoute> <Question dark={dark}/> </ProtectedRoute>}/>
             <Route path='*' element={ <div className='flex flex-col justify-center items-center bg-inherit fixed top-0 left-0 h-screen w-full'><h1 className='font-black text-6xl text-center'>404 </h1> <p className='font-bold'>Page not found</p> <Link to={'/dashboard'} className='bg-indigo-500 flex text-white p-2.5 rounded'>Dashboard</Link> </div> } />
           </Route>
