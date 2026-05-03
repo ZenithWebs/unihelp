@@ -9,6 +9,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import ProfilePhoto from '../components/ProfilePhoto'
 import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, HouseIcon, LayoutDashboardIcon, LogOut, NewspaperIcon, NotebookPenIcon } from 'lucide-react';
+import DonationPopupSystem from '../components/DonationPopup';
 
 const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
 
@@ -63,6 +64,7 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
         dark ? "bg-[#0b0f1a] text-white" : "bg-gray-100 text-gray-900"
       }`}>
         <InstallPWAButton />
+        <DonationPopupSystem/>
         <Outlet/>
       </div>
       

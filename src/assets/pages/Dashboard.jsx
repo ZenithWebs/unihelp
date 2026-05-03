@@ -14,6 +14,7 @@ import { auth, db } from "../../firebase/config";
 import { onAuthStateChanged } from 'firebase/auth';
 import SmartFeed from '../components/SmartFeed';
 
+
 const Dashboard = ({dark}) => {
 
   const [records, setRecords] = useState([]);
@@ -114,6 +115,7 @@ const Dashboard = ({dark}) => {
 
         </div>
       </div>
+      
 
       <div className='grid grid-cols-1 mx-auto md:grid-cols-3 gap-5'>
         <Card url={'/GPA'} dark={dark} background={'bg-[#601b9b]'} icon={<Calculator/>} title={'GPA Calculator'} description={'Calculate and track your GPA'} />
@@ -134,13 +136,13 @@ const Dashboard = ({dark}) => {
       
 
         <div className={`p-5 rounded-xl mt-6 ${dark ? "bg-[#111827]" : "bg-white"}`}>
-  <h2 className="font-bold mb-4 flex items-center gap-2"><HistoryIcon className='text-red-500'/> CGPA History</h2>
+        <h2 className="font-bold mb-4 flex items-center gap-2"><HistoryIcon className='text-red-500'/> CGPA History</h2>
 
-  {loading && <p>Loading...</p>}
+        {loading && <p>Loading...</p>}
 
-  {!loading && records.length === 0 && (
-    <p className="text-sm opacity-60">No saved records yet</p>
-  )}
+        {!loading && records.length === 0 && (
+          <p className="text-sm opacity-60">No saved records yet</p>
+        )}
 
   <div className="grid md:grid-cols-2 gap-4">
         {records.map((r) => (
