@@ -126,7 +126,7 @@ const Dashboard = ({dark}) => {
 
         <Card url={'/hostelmarketplace'} dark={dark} background={'bg-indigo-500'} icon={<Home/>} title={'Hostel Market Place'} description={'Find verify hostel near your campus'} />
 
-        <Card url={'/upload'} dark={dark} background={'bg-yellow-500'} icon={<UploadCloud/>} title={'Lecture Notes'} description={'Share Lecture Notes & request for lecture note from others'} />
+        <Card url={'/lecturenotesmarketplace'} dark={dark} background={'bg-yellow-500'} icon={<UploadCloud/>} title={'Lecture Notes'} description={'Share Lecture Notes & request for lecture note from others'} />
 
 
       </div>

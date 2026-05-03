@@ -4,7 +4,7 @@ import SmartFeed from '../components/SmartFeed'
 const NewsFeed = ({dark}) => {
   return (
     <div className='flex w-full p-5'>
-      <SmartFeed/>
+      <SmartFeed dark={dark}/>
     </div>
   )
 }
