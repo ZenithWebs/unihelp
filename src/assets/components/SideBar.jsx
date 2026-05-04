@@ -1,5 +1,5 @@
 import { signOut } from "firebase/auth";
-import { Brain, CalculatorIcon, ChevronRight, CloudUploadIcon, File, HomeIcon, LayoutDashboardIcon, LogOut, NotebookPenIcon, User } from 'lucide-react'
+import { Brain, CalculatorIcon, ChevronRight, CloudUploadIcon, File, HomeIcon, LayoutDashboardIcon, LogOut, MessageCircle, NotebookPenIcon, User } from 'lucide-react'
 import {React, useContext, useEffect, useState} from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from "../../firebase/config";
@@ -37,6 +37,8 @@ const handleLogout = async () => {
       
 
       <NavLink to={'/ai'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI Assistance</NavLink>
+      
+      <NavLink to={'/community'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <MessageCircle className=''/> Community</NavLink>
 
       <div className="flex flex-col shrink-0 mt-auto">
         <span className="flex overflow-hidden relative items-center">

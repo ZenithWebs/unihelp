@@ -7,7 +7,6 @@ export default function DonationPopupSystem() {
 
   const donationLink = "https://flutterwave.com/donate/yca6jqnjmagr";
 
-  // Auto show popup after 30 seconds (only once per session)
   useEffect(() => {
     if (hasShownOnce) return;
 

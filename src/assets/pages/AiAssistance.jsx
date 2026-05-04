@@ -28,11 +28,17 @@ import {
   where,
   getDocs,
   orderBy,
-  limit,
+  limit, 
+  updateDoc,
+  increment,
+   getDoc,
 } from "firebase/firestore";
 import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
+import { ref } from "firebase/storage";
+import Logo from '../images/Logo_Dark.png'
+import { useMemo } from "react";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -57,13 +63,24 @@ const AIAssistant = ({ dark }) => {
   const controllerRef = useRef(null);
   const [pdfChunks, setPdfChunks] = useState([]);
   const [activeDoc, setActiveDoc] = useState(null);
-  const [usage, setUsage] = useState({
-    count: 0,
-    limit: 10,
-  });
+  const [tokens, setTokens] = useState(0);
 
-  const getToday = () => {
-  return new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+const loadTokens = async () => {
+  if (!auth.currentUser) return;
+
+  const ref = doc(db, "userTokens", auth.currentUser.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      userId: auth.currentUser.uid,
+      balance: 0,
+    });
+
+    setTokens(0);
+  } else {
+    setTokens(snap.data().balance || 0);
+  }
 };
 
 
@@ -101,41 +118,6 @@ const AIAssistant = ({ dark }) => {
     }
   } catch (err) {
     console.log("Save error:", err);
-  }
-};
-
-const loadUsage = async () => {
-  if (!auth.currentUser) return;
-
-  const ref = doc(db, "aiUsage", auth.currentUser.uid);
-  const snap = await getDoc(ref);
-
-  const today = getToday();
-
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      userId: auth.currentUser.uid,
-      count: 0,
-      limit: 10,
-      lastReset: today,
-    });
-
-    setUsage({ count: 0, limit: 20 });
-    return;
-  }
-
-  const data = snap.data();
-
-  if (data.lastReset !== today) {
-    await setDoc(ref, {
-      ...data,
-      count: 0,
-      lastReset: today,
-    });
-
-    setUsage({ count: 0, limit: 20 });
-  } else {
-    setUsage(data);
   }
 };
 
@@ -181,7 +163,7 @@ const loadUsage = async () => {
 };
 
 useEffect(() => {
-  loadUsage();
+  loadTokens();
 }, []);
 
 
@@ -261,20 +243,31 @@ const handleFileUpload = async (e) => {
 
 
  const handleSend = async () => {
+  if (loading) return;
   if (!input.trim()) return;
 
-  // LIMIT CHECK
-  if (usage.count >= usage.limit) {
+  const COST_PER_MESSAGE = 18;
+
+
+if (tokens < COST_PER_MESSAGE) {
   setShowUpgrade(true);
 
   setMessages((prev) => [
     ...prev,
     {
       role: "ai",
-      text: "🚫 You’ve used all your free tokens. Please upgrade to continue or wait till it reset.",
+      text: "🚫 You don’t have enough tokens. Please purchase to continue.",
     },
   ]);
 
+  return;
+}
+
+const freshSnap = await getDoc(ref);
+const freshBalance = freshSnap.data()?.balance || 0;
+
+if (freshBalance < COST_PER_MESSAGE) {
+  setShowUpgrade(true);
   return;
 }
 
@@ -335,6 +328,19 @@ const handleFileUpload = async (e) => {
 
     const aiText = data.reply;
 
+    const ref = doc(db, "userTokens", auth.currentUser.uid);
+
+if (!res.ok) {
+  if (data.error === "NOT_ENOUGH_TOKENS") {
+    setShowUpgrade(true);
+    return;
+  }
+
+  throw new Error(data.error);
+}
+
+
+await loadTokens();
     const updated = [
       ...newMessages,
       { role: "ai", text: aiText },
@@ -343,7 +349,6 @@ const handleFileUpload = async (e) => {
     setMessages(updated);
 
     await saveChat(updated);
-    await updateUsage(); // ✅ track usage
 
   } catch (err) {
     if (err.name === "AbortError") {
@@ -360,33 +365,7 @@ const handleFileUpload = async (e) => {
 
   setLoading(false);
 };
-const updateUsage = async () => {
-  if (!auth.currentUser) return;
 
-  const q = query(
-    collection(db, "aiUsage"),
-    where("userId", "==", auth.currentUser.uid)
-  );
-
-  const snap = await getDocs(q);
-
-  if (snap.empty) return;
-
-  const docRef = snap.docs[0].ref;
-  const data = snap.docs[0].data();
-
-  const newCount = (data.count || 0) + 1;
-
-  await setDoc(docRef, {
-    ...data,
-    count: newCount,
-  });
-
-  setUsage((prev) => ({
-    ...prev,
-    count: newCount,
-  }));
-};
 
 
 useEffect(() => {
@@ -399,49 +378,51 @@ useEffect(() => {
   return () => clearTimeout(timeout);
 }, [messages]);
 
-useEffect(() => {
-  if (usage.count >= usage.limit - 3) {
-    setWarning("⚠️ You have 3 tokens left");
-  } else {
-    setWarning("");
-  }
-}, [usage]);
+const flutterwaveConfig = useMemo(() => ({
+  public_key: import.meta.env.VITE_FLW_PUBLIC_KEY,
+  tx_ref: Date.now().toString(),
+  amount: 600,
+  currency: "NGN",
+  payment_options: "card,banktransfer,ussd",
+  customer: {
+    email: auth.currentUser?.email,
+    name: auth.currentUser?.displayName || "User",
+  },
+  customizations: {
+    title: "UniHelp AI Tokens",
+    description: "Buy AI tokens",
+    logo: Logo,
+  },
+  meta: {
+    userId: auth.currentUser?.uid,
+    tokens: 1500,
+  },
+}), [auth.currentUser]);
+const handlePayment = useFlutterwave(flutterwaveConfig);
 
-const flutterwaveConfig = {
-            public_key: import.meta.env.VITE_FLW_PUBLIC_KEY,
-            tx_ref: Date.now().toString(),
-            amount: 500, // example ₦500
-            currency: "NGN",
-            payment_options: "card,banktransfer,ussd",
-            customer: {
-              email: auth.currentUser?.email,
-              name: auth.currentUser?.displayName || "User",
-            },
-            customizations: {
-              title: "CampusFlow AI Tokens",
-              description: "Buy AI tokens",
-              logo: "https://your-logo-url.com/logo.png",
-            },
-          };
+      const payNow = () => {
+  console.log("Opening payment...");
 
-          const handlePayment = useFlutterwave(flutterwaveConfig);
+  handlePayment({
+    callback: (response) => {
+      console.log(response);
+      closePaymentModal();
+      alert("Payment processing...");
+    },
+    onClose: () => {
+      console.log("Payment closed");
+    },
+  });
+};
 
-            const payNow = () => {
-              handlePayment({
-                callback: (response) => {
-                  console.log(response);
 
-                  closePaymentModal();
-
-                  // 🚨 IMPORTANT: do NOT add tokens here
-                  // wait for webhook confirmation
-                  alert("Payment processing...");
-                },
-                onClose: () => {
-                  console.log("Payment closed");
-                },
-              });
-            };
+            useEffect(() => {
+      if (tokens <= 50 && tokens > 0) {
+        setWarning("⚠️ Low tokens. Consider topping up.");
+      } else {
+        setWarning("");
+      }
+    }, [tokens]);
   return (
     <div
       className={`min-h-screen w-full px-4 py-6 ${
@@ -476,10 +457,9 @@ const flutterwaveConfig = {
         </div>
 
           <div>
-            <div className="text-xs opacity-70 flex items-center gap-2">
-            <BrainIcon size={14} />
-            Daily Tokens: {Math.max(usage.limit - usage.count, 0)} / {usage.limit}
-          </div>
+            <p className="text-xs opacity-70">
+            ≈ {Math.floor(tokens / 18)} messages remaining
+          </p>
           <span className="text-red-500">
             {warning}
           </span>
@@ -562,6 +542,7 @@ const flutterwaveConfig = {
                 accept="application/pdf"
                 onChange={handleFileUpload}
                 className="hidden"
+                
               />
             </label>
 
@@ -626,7 +607,7 @@ const flutterwaveConfig = {
       </div>
       {showUpgrade && (
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div className="bg-white dark:bg-[#111827] p-6 rounded-2xl w-[90%] max-w-md shadow-xl">
+    <div className={` ${dark ?'bg-[#111827]' : 'bg-white'} p-6 rounded-2xl w-[90%] max-w-md shadow-xl`}>
 
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="text-yellow-500" />
@@ -634,28 +615,22 @@ const flutterwaveConfig = {
       </div>
 
       <p className="text-sm opacity-70 mb-4">
-        You’ve reached your free token limit. Upgrade to continue using AI Assistant.
+        "You don’t have enough tokens. Purchase to continue using AI."
       </p>
 
-      <div className="space-y-3">
 
-        <div className="p-3 rounded-xl border dark:border-gray-700">
-          <p className="font-semibold">Starter Pack</p>
-          <p className="text-sm opacity-70">100 tokens</p>
-          <p className="font-bold">₦500</p>
+        <div className={`p-3 rounded-xl border ${dark ? 'border-gray-700 bg-slate-800':'border-gray-300 bg-slate-200'}  text-center`}>
+          <p className="font-semibold text-2xl">AI Pack</p>
+          <p className="text-lg opacity-70 text-amber-600">1,500 tokens</p>
+          <p className="font-bold">₦600</p>
         </div>
-
-        <div className="p-3 rounded-xl border dark:border-gray-700">
-          <p className="font-semibold">Pro Pack</p>
-          <p className="text-sm opacity-70">500 tokens</p>
-          <p className="font-bold">₦2,000</p>
-        </div>
-
-      </div>
 
       <button
         className="w-full mt-4 bg-indigo-500 text-white py-2 rounded-lg"
-        onClick={payNow}>
+        onClick={() => {
+          console.log("clicked");
+          payNow();
+        }}>
         Buy Tokens
       </button>
 
