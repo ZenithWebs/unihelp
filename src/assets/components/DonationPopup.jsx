@@ -13,7 +13,7 @@ export default function DonationPopupSystem() {
     const timer = setTimeout(() => {
       setIsOpen(true);
       setHasShownOnce(true);
-    }, 30000);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [hasShownOnce]);
@@ -23,10 +23,10 @@ export default function DonationPopupSystem() {
       {/* Floating Donate Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-25 right-5 bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700"
+        className="fixed bottom-25 left-5 bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700"
       >
         <Gift size={18} />
-        Donate
+        
       </button>
 
       {/* Popup Modal */}
@@ -44,12 +44,12 @@ export default function DonationPopupSystem() {
             {/* Header */}
             <div className="flex items-center gap-2 mb-3">
               <Heart className="text-red-500" />
-              <h2 className="text-lg font-bold">Support CampusFlow</h2>
+              <h2 className="text-lg font-bold">Support UniHelp</h2>
             </div>
 
             {/* Description */}
             <p className="text-sm text-gray-600 mb-5">
-              Help us keep CampusFlow running and improve learning tools for students.
+              Help us keep UniHelp running and improve learning tools for students.
             </p>
 
             {/* Donate Button */}
@@ -60,7 +60,7 @@ export default function DonationPopupSystem() {
               className="w-full bg-blue-600 text-white py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700"
             >
               <Gift size={18} />
-              Donate via Flutterwave
+              Donate
             </a>
 
             {/* Footer */}

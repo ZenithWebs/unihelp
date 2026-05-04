@@ -13,6 +13,7 @@ import {
 import { auth, db } from "../../firebase/config";
 import { onAuthStateChanged } from 'firebase/auth';
 import SmartFeed from '../components/SmartFeed';
+import DonationPopupSystem from './../components/DonationPopup';
 
 
 const Dashboard = ({dark}) => {
@@ -126,6 +127,7 @@ const Dashboard = ({dark}) => {
         
         <Card url={'/upload'} dark={dark} background={'bg-green-700'} icon={<UploadCloud/>} title={'Upload Document'} description={'Share  questions & important files with others'} />
 
+
         <Card url={'/hostelmarketplace'} dark={dark} background={'bg-indigo-500'} icon={<Home/>} title={'Hostel Market Place'} description={'Find verify hostel near your campus'} />
 
         <Card url={'/lecturenotesmarketplace'} dark={dark} background={'bg-yellow-500'} icon={<UploadCloud/>} title={'Lecture Notes'} description={'Share Lecture Notes & request for lecture note from others'} />
@@ -174,6 +176,7 @@ const Dashboard = ({dark}) => {
         ))}
       </div>
     </div>
+    <DonationPopupSystem/>
     <pre className='max-md:hidden'>
 
 

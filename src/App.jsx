@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import HostelMarketplace from './assets/pages/HostelMarketplace';
 import NewsFeed from './assets/pages/NewsFeed';
 import Community from './assets/pages/Community';
+import TutorialPage from './assets/pages/Tutorials';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -40,13 +41,15 @@ const App = () => {
             <Route path='/ai' element={<ProtectedRoute><AiAssistance dark={dark}/></ProtectedRoute>}/>
             <Route path='/hostelmarketplace' element={<ProtectedRoute><HostelMarketplace dark={dark}/></ProtectedRoute>}/>
 
-            <Route path='/upload' element={<ProtectedRoute><Upload dark={dark}/> </ProtectedRoute>}/>
+            <Route path='/uploadquestion' element={<ProtectedRoute><Upload dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/lecturenotesmarketplace' element={<ProtectedRoute><LectureNotesMarketplace dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/profile' element={<ProtectedRoute> <Profile dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/newsfeed' element={<ProtectedRoute> <NewsFeed dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/tutorials' element={<ProtectedRoute> <TutorialPage dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/questions' element={<ProtectedRoute> <Question dark={dark}/> </ProtectedRoute>}/>
 
