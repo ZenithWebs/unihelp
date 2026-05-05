@@ -330,7 +330,7 @@ useEffect(() => {
 
         <button
           onClick={sendMessage}
-          className="bg-indigo-500 text-white px-4 rounded-md"
+          className="bg-indigo-500 cursor-pointer hover:bg-indigo-600 text-white px-4 rounded-md"
         >
           Send
         </button>

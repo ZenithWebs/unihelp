@@ -1,4 +1,4 @@
-import { PlayCircle } from "lucide-react";
+import { PlayCircle, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 /* ---------------- CONFIG ---------------- */
@@ -28,7 +28,6 @@ const useDebounce = (value, delay = 600) => {
 export default function TutorialSearchPage({ dark = false }) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 600);
-
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -127,10 +126,12 @@ useEffect(() => {
 
       {/* PLAYER */}
       {currentVideo && (
-        <div className="px-4">
+        <div className="px-4 max-md:h-screen bg-black/50 max-md:z-20 max-md:w-full max-md:fixed max-md:left-1/2 max-md:-translate-x-1/2 max-md:backdrop-blur-3xl max-md:top-1/2 max-md:-translate-y-1/2 flex justify-center items-center">
+
           <div className="rounded-xl overflow-hidden shadow-lg">
+            <X onClick={(e)=>{setCurrentVideo(null)}} size={35} className="flex text-white"/>
             <iframe
-              className="w-full h-64 md:h-96"
+              className="w-svw z-50 h-64 md:h-96"
               src={`https://www.youtube.com/embed/${currentVideo}`}
               allowFullScreen
             />

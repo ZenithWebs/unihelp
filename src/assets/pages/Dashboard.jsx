@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import Card from './../components/Card';
-import { Activity, Book, Calculator, ChartBar, File, HistoryIcon, Home, Trash2Icon, UploadCloud } from 'lucide-react';
+import { Activity, Book, Calculator, ChartBar, File, HistoryIcon, Home, MessageCircle, Newspaper, NewspaperIcon, PlayIcon, Sparkles, Trash2Icon, UploadCloud } from 'lucide-react';
 import { AuthContext } from './../context/AuthContext';
 import {
   query,
@@ -131,6 +131,16 @@ const Dashboard = ({dark}) => {
         <Card url={'/hostelmarketplace'} dark={dark} background={'bg-indigo-500'} icon={<Home/>} title={'Hostel Market Place'} description={'Find verify hostel near your campus'} />
 
         <Card url={'/lecturenotesmarketplace'} dark={dark} background={'bg-yellow-500'} icon={<UploadCloud/>} title={'Lecture Notes'} description={'Share Lecture Notes & request for lecture note from others'} />
+
+        <Card url={'/ai'} dark={dark} background={'bg-black'} icon={<Sparkles/>} title={'AI Study Assistant'} description={'Ask questions and get instant explanations and study help.'} />
+
+
+        <Card url={'/community'} dark={dark} background={'bg-amber-900'} icon={<MessageCircle/>} title={'Community Chat'} description={'Real-time group chat for students like WhatsApp-style discussion rooms.'} />
+
+
+        <Card url={'/tutorials'} dark={dark} background={'bg-pink-600'} icon={<PlayIcon/>} title={'Video Player'} description={'Search and watch educational videos directly inside the app.'} />
+
+        <Card url={'/newsfeed'} dark={dark} background={'bg-blue-400'} icon={<NewspaperIcon/>} title={'Smart Newsfeed'} description={'News, techs and opportunities curated for you'} />
 
 
       </div>

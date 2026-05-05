@@ -18,6 +18,8 @@ import HostelMarketplace from './assets/pages/HostelMarketplace';
 import NewsFeed from './assets/pages/NewsFeed';
 import Community from './assets/pages/Community';
 import TutorialPage from './assets/pages/Tutorials';
+import MyHostels from './assets/pages/MyUploadedHostel';
+import AdminHostelApproval from './assets/pages/AdminHostelApproval';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -46,6 +48,10 @@ const App = () => {
             <Route path='/lecturenotesmarketplace' element={<ProtectedRoute><LectureNotesMarketplace dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/profile' element={<ProtectedRoute> <Profile dark={dark}/> </ProtectedRoute>}/>
+            
+            <Route path='/myhostels' element={<ProtectedRoute> <MyHostels dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/adminhostelapproval' element={<ProtectedRoute> <AdminHostelApproval dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/newsfeed' element={<ProtectedRoute> <NewsFeed dark={dark}/> </ProtectedRoute>}/>
 
