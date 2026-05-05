@@ -9,6 +9,7 @@ import {
   PinIcon,
   Heart,
   X,
+  NewspaperIcon,
 } from "lucide-react";
 import { db, auth } from "../../firebase/config";
 import {
@@ -293,7 +294,7 @@ const rankedPosts = [...filteredPosts].sort((a, b) => {
       {/* LOADING */}
       {loading && (
         <div className="flex justify-center mt-10">
-          <Loader2 className="animate-zoom" />
+          <NewspaperIcon className="animate-bounce" />
         </div>
       )}
 

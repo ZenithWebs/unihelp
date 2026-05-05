@@ -1,18 +1,23 @@
 import { PlayCircle, X } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 /* ---------------- CONFIG ---------------- */
 const API_KEY = "AIzaSyAhQUd-So4kqcAMEr6lTlnly-KJdK16Nu8";
+
 const DEFAULT_QUERIES = [
   "Use Of English",
   "Learn Video Editing",
   "How create a video animation",
   "HTML CSS tutorial",
 ];
+
 const DEFAULT_QUERY =
   DEFAULT_QUERIES[new Date().getSeconds() % DEFAULT_QUERIES.length];
 
-/* ---------------- DEBOUNCE HOOK ---------------- */
+const CACHE_KEY = "yt_cache_v1";
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
+
+/* ---------------- DEBOUNCE ---------------- */
 const useDebounce = (value, delay = 600) => {
   const [debounced, setDebounced] = useState(value);
 
@@ -24,90 +29,127 @@ const useDebounce = (value, delay = 600) => {
   return debounced;
 };
 
+/* ---------------- CACHE HELPERS ---------------- */
+const getCache = () => {
+  const data = localStorage.getItem(CACHE_KEY);
+  return data ? JSON.parse(data) : {};
+};
+
+const saveCache = (cache) => {
+  localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+};
+
+const isValid = (time) => Date.now() - time < CACHE_TTL;
+
 /* ---------------- MAIN COMPONENT ---------------- */
 export default function TutorialSearchPage({ dark = false }) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 600);
+
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [pageToken, setPageToken] = useState("");
   const [currentVideo, setCurrentVideo] = useState(null);
+
   const [saved, setSaved] = useState([]);
   const [history, setHistory] = useState([]);
+
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
-  const listRef = useRef(null);
-
-  /* -------- LOAD SAVED -------- */
+  /* ---------------- LOAD SAVED ---------------- */
   useEffect(() => {
     const data = localStorage.getItem("unihelp_saved_videos");
     if (data) setSaved(JSON.parse(data));
   }, []);
 
+  /* ---------------- LOAD HISTORY ---------------- */
+  useEffect(() => {
+    const data = JSON.parse(localStorage.getItem("search_history") || "[]");
+    setHistory(data);
+  }, []);
 
+  /* ---------------- SAVE HISTORY ---------------- */
+  useEffect(() => {
+    const term = debouncedQuery.trim();
+    if (!term) return;
 
-  /* -------- SEARCH YOUTUBE -------- */
-useEffect(() => {
-  const searchTerm = debouncedQuery.trim()
-    ? debouncedQuery
-    : DEFAULT_QUERY;
+    const stored = JSON.parse(localStorage.getItem("search_history") || "[]");
 
-  const fetchVideos = async () => {
-  setLoading(true);
+    const updated = [term, ...stored.filter((t) => t !== term)].slice(0, 5);
 
-  try {
-    const searchTerm = (debouncedQuery.trim() || DEFAULT_QUERY) +
+    localStorage.setItem("search_history", JSON.stringify(updated));
+    setHistory(updated);
+  }, [debouncedQuery]);
+
+  /* ---------------- DEFAULT QUERY ---------------- */
+  useEffect(() => {
+    setQuery(DEFAULT_QUERY);
+  }, []);
+
+  /* ---------------- FETCH WITH CACHE ---------------- */
+  const fetchVideos = async (reset = false) => {
+    setLoading(true);
+
+    const searchTerm =
+      (debouncedQuery.trim() || DEFAULT_QUERY) +
       " tutorial education learn";
 
-    const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(searchTerm)}&pageToken=${pageToken}&key=${API_KEY}`
-    );
+    const cache = getCache();
 
-    const data = await res.json();
+    // 🔥 CHECK CACHE FIRST
+    if (cache[searchTerm] && isValid(cache[searchTerm].time) && !reset) {
+      setResults(cache[searchTerm].data);
+      setLoading(false);
+      return;
+    }
 
-    if (!data.items) return;
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(
+          searchTerm
+        )}&pageToken=${reset ? "" : pageToken}&key=${API_KEY}`
+      );
 
-    const vids = data.items.map((item) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      thumbnail: item.snippet.thumbnails.medium.url,
-      channel: item.snippet.channelTitle,
-    }));
+      const data = await res.json();
 
-    setResults((prev) => shuffle([...prev, ...vids]));
-    setPageToken(data.nextPageToken || "");
-  } catch (err) {
-    console.error(err);
-  }
+      if (!data.items) return;
 
-  setLoading(false);
-};
+      const vids = data.items.map((item) => ({
+        id: item.id.videoId,
+        title: item.snippet.title,
+        thumbnail: item.snippet.thumbnails.medium.url,
+        channel: item.snippet.channelTitle,
+      }));
 
-  fetchVideos();
-}, [debouncedQuery]);
+      const newResults = reset ? vids : [...results, ...vids];
 
-useEffect(() => {
-  const term = debouncedQuery.trim();
-  if (!term) return;
+      setResults(shuffle(newResults));
 
-  const stored = JSON.parse(localStorage.getItem("search_history") || "[]");
+      setPageToken(data.nextPageToken || "");
 
-  const updated = [term, ...stored.filter(t => t !== term)].slice(0, 10);
+      // 💾 SAVE TO CACHE
+      cache[searchTerm] = {
+        data: newResults,
+        time: Date.now(),
+      };
 
-  localStorage.setItem("search_history", JSON.stringify(updated));
-  setHistory(updated);
-}, [debouncedQuery]);
+      saveCache(cache);
+    } catch (err) {
+      console.error("YouTube API error:", err);
+    }
 
-useEffect(() => {
-  const data = JSON.parse(localStorage.getItem("search_history") || "[]");
-  setHistory(data);
-}, []);
+    setLoading(false);
+  };
 
-useEffect(() => {
-  setQuery(DEFAULT_QUERY);
-}, []);
+  /* ---------------- RUN SEARCH ---------------- */
+  useEffect(() => {
+    setResults([]);
+    setPageToken("");
+    fetchVideos(true);
+  }, [debouncedQuery]);
 
-  /* -------- SAVE VIDEO -------- */
+  /* ---------------- SAVE VIDEO ---------------- */
   const saveVideo = (video) => {
     if (saved.find((v) => v.id === video.id)) return;
 
@@ -116,20 +158,28 @@ useEffect(() => {
     localStorage.setItem("unihelp_saved_videos", JSON.stringify(updated));
   };
 
-  /* -------- REMOVE VIDEO -------- */
+  /* ---------------- REMOVE VIDEO ---------------- */
   const removeVideo = (id) => {
     const updated = saved.filter((v) => v.id !== id);
     setSaved(updated);
     localStorage.setItem("unihelp_saved_videos", JSON.stringify(updated));
   };
-  
+
   /* ---------------- UI ---------------- */
   return (
-    <div className={`w-full min-h-screen ${dark ? "bg-[#0b0f19] text-white" : "bg-gray-100 text-black"}`}>
-      
+    <div
+      className={`w-full min-h-screen ${
+        dark ? "bg-[#0b0f19] text-white" : "bg-gray-100 text-black"
+      }`}
+    >
       {/* HEADER */}
-      <div className={`p-4 flex items-center font-bold text-lg ${dark ? "bg-[#111827]" : "bg-white shadow"}`}>
-        <PlayCircle className="text-indigo-500 pr-1" size={35}/> <span className="text-indigo-500">UniHelp</span> Tutorials
+      <div
+        className={`p-4 flex items-center font-bold text-lg ${
+          dark ? "bg-[#111827]" : "bg-white shadow"
+        }`}
+      >
+        <PlayCircle className="text-indigo-500 pr-1" size={35} />
+        <span className="text-indigo-500">UniHelp</span> Tutorials
       </div>
 
       {/* SEARCH */}
@@ -137,19 +187,22 @@ useEffect(() => {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search tutorials (e.g. React hooks, Node.js)..."
+          placeholder="Search tutorials..."
           className={`w-full p-3 rounded-lg outline-none ${
             dark ? "bg-gray-900" : "bg-white shadow"
           }`}
         />
-        
       </div>
-            <div className="flex gap-2 flex-wrap px-4">
+
+      {/* HISTORY */}
+      <div className="flex gap-2 flex-wrap px-4">
         {history.map((item, i) => (
           <button
             key={i}
             onClick={() => setQuery(item)}
-            className={`text-xs px-2 py-1 rounded bg-gray-200 ${dark && 'bg-gray-800'}`}
+            className={`text-xs px-2 py-1 rounded ${
+              dark ? "bg-gray-800 text-white" : "bg-gray-200"
+            }`}
           >
             {item}
           </button>
@@ -158,12 +211,16 @@ useEffect(() => {
 
       {/* PLAYER */}
       {currentVideo && (
-        <div className="px-4 max-md:h-screen bg-black/50 max-md:z-20 max-md:w-full max-md:fixed max-md:left-1/2 max-md:-translate-x-1/2 max-md:backdrop-blur-3xl max-md:top-1/2 max-md:-translate-y-1/2 flex justify-center items-center">
-
-          <div className="rounded-xl overflow-hidden shadow-lg">
-            <X onClick={(e)=>{setCurrentVideo(null)}} size={35} className="flex text-white"/>
+        <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+          <div className="bg-black p-2 rounded-xl">
+            <X
+              onClick={() => setCurrentVideo(null)}
+              size={30}
+              className="text-white cursor-pointer"
+            />
             <iframe
-              className=""
+              width="360"
+              height="215"
               src={`https://www.youtube.com/embed/${currentVideo}`}
               allowFullScreen
             />
@@ -199,9 +256,7 @@ useEffect(() => {
                   {video.title}
                 </div>
 
-                <div className="text-xs opacity-60">
-                  {video.channel}
-                </div>
+                <div className="text-xs opacity-60">{video.channel}</div>
 
                 <button
                   onClick={() => saveVideo(video)}
@@ -213,8 +268,10 @@ useEffect(() => {
             </div>
           ))}
         </div>
+
+        {/* LOAD MORE */}
         <button
-          onClick={() => fetchVideos()}
+          onClick={() => fetchVideos(false)}
           className="w-full mt-3 p-2 bg-indigo-600 text-white rounded"
         >
           Load More
