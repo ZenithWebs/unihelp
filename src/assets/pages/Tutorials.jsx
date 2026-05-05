@@ -30,9 +30,11 @@ export default function TutorialSearchPage({ dark = false }) {
   const debouncedQuery = useDebounce(query, 600);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const [pageToken, setPageToken] = useState("");
   const [currentVideo, setCurrentVideo] = useState(null);
   const [saved, setSaved] = useState([]);
+  const [history, setHistory] = useState([]);
+  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
   const listRef = useRef(null);
 
@@ -42,6 +44,8 @@ export default function TutorialSearchPage({ dark = false }) {
     if (data) setSaved(JSON.parse(data));
   }, []);
 
+
+
   /* -------- SEARCH YOUTUBE -------- */
 useEffect(() => {
   const searchTerm = debouncedQuery.trim()
@@ -49,39 +53,55 @@ useEffect(() => {
     : DEFAULT_QUERY;
 
   const fetchVideos = async () => {
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=10&q=${encodeURIComponent(
-          searchTerm
-        )}&key=${API_KEY}`
-      );
+  try {
+    const searchTerm = (debouncedQuery.trim() || DEFAULT_QUERY) +
+      " tutorial education learn";
 
-      const data = await res.json();
+    const res = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&q=${encodeURIComponent(searchTerm)}&pageToken=${pageToken}&key=${API_KEY}`
+    );
 
-      if (!data.items) {
-        console.error("YouTube API error:", data);
-        return;
-      }
+    const data = await res.json();
 
-      const vids = data.items.map((item) => ({
-        id: item.id.videoId,
-        title: item.snippet.title,
-        thumbnail: item.snippet.thumbnails.medium.url,
-        channel: item.snippet.channelTitle,
-      }));
+    if (!data.items) return;
 
-      setResults(vids);
-    } catch (err) {
-      console.error("YouTube search error:", err);
-    }
+    const vids = data.items.map((item) => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      thumbnail: item.snippet.thumbnails.medium.url,
+      channel: item.snippet.channelTitle,
+    }));
 
-    setLoading(false);
-  };
+    setResults((prev) => shuffle([...prev, ...vids]));
+    setPageToken(data.nextPageToken || "");
+  } catch (err) {
+    console.error(err);
+  }
+
+  setLoading(false);
+};
 
   fetchVideos();
 }, [debouncedQuery]);
+
+useEffect(() => {
+  const term = debouncedQuery.trim();
+  if (!term) return;
+
+  const stored = JSON.parse(localStorage.getItem("search_history") || "[]");
+
+  const updated = [term, ...stored.filter(t => t !== term)].slice(0, 10);
+
+  localStorage.setItem("search_history", JSON.stringify(updated));
+  setHistory(updated);
+}, [debouncedQuery]);
+
+useEffect(() => {
+  const data = JSON.parse(localStorage.getItem("search_history") || "[]");
+  setHistory(data);
+}, []);
 
 useEffect(() => {
   setQuery(DEFAULT_QUERY);
@@ -102,7 +122,7 @@ useEffect(() => {
     setSaved(updated);
     localStorage.setItem("unihelp_saved_videos", JSON.stringify(updated));
   };
-
+  
   /* ---------------- UI ---------------- */
   return (
     <div className={`w-full min-h-screen ${dark ? "bg-[#0b0f19] text-white" : "bg-gray-100 text-black"}`}>
@@ -122,6 +142,18 @@ useEffect(() => {
             dark ? "bg-gray-900" : "bg-white shadow"
           }`}
         />
+        
+      </div>
+            <div className="flex gap-2 flex-wrap px-4">
+        {history.map((item, i) => (
+          <button
+            key={i}
+            onClick={() => setQuery(item)}
+            className={`text-xs px-2 py-1 rounded bg-gray-200 ${dark && 'bg-gray-800'}`}
+          >
+            {item}
+          </button>
+        ))}
       </div>
 
       {/* PLAYER */}
@@ -131,7 +163,7 @@ useEffect(() => {
           <div className="rounded-xl overflow-hidden shadow-lg">
             <X onClick={(e)=>{setCurrentVideo(null)}} size={35} className="flex text-white"/>
             <iframe
-              className="w-svw z-50 h-64 md:h-96"
+              className=""
               src={`https://www.youtube.com/embed/${currentVideo}`}
               allowFullScreen
             />
@@ -181,6 +213,12 @@ useEffect(() => {
             </div>
           ))}
         </div>
+        <button
+          onClick={() => fetchVideos()}
+          className="w-full mt-3 p-2 bg-indigo-600 text-white rounded"
+        >
+          Load More
+        </button>
       </div>
 
       {/* SAVED */}
