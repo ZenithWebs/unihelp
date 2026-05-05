@@ -20,6 +20,7 @@ import Community from './assets/pages/Community';
 import TutorialPage from './assets/pages/Tutorials';
 import MyHostels from './assets/pages/MyUploadedHostel';
 import AdminHostelApproval from './assets/pages/AdminHostelApproval';
+import InstallPrompt from './assets/components/InstallPrompt';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -32,6 +33,8 @@ const App = () => {
     <>
     
     <Navbar dark={dark} setMenuOpen={setMenuOpen} menuOpen={menuOpen} setDark={setDark}/>
+
+    <InstallPrompt/>
       <div className={dark ? "bg-slate-900 text-white" : "bg-white text-black"}>
         <Routes>
           <Route path='/' element={<Login dark={dark}/>}/>

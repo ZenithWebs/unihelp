@@ -24,7 +24,8 @@
     "recharts": "^3.8.1",
     "router-dom": "^3.0.3",
     "rss-parser": "^3.13.0",
-    "tailwindcss": "^4.2.4"
+    "tailwindcss": "^4.2.4",
+    "vite-plugin-pwa": "^1.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
