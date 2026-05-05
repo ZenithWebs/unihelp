@@ -9,6 +9,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+       devOptions: {
+        enabled: true // ✅ prevents dev crash
+      },
       manifest: {
         name: 'UniHelp',
         short_name: 'UniHelp',

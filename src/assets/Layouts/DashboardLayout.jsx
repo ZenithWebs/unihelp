@@ -2,7 +2,6 @@ import React, { useState, useContext} from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import SideBar from '../components/SideBar'
 import BottomBar from './../components/BottomBar';
-import InstallPWAButton from '../components/InstallPWAButton';
 import { auth, db } from "../../firebase/config";
 import { AuthContext } from "../context/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
@@ -62,7 +61,6 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
       <div onClick={(e)=> setMenuOpen(false)} className={`h-screen max-md:mb-25 w-full pt-20 flex overflow-y-auto no-scrollbar ${
         dark ? "bg-[#0b0f1a] text-white" : "bg-gray-100 text-gray-900"
       }`}>
-        <InstallPWAButton />
         
         <Outlet/>
       </div>
