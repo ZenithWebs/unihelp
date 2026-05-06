@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
-import { db, auth } from "../../firebase/config";
-import {
-  collection,
-  query,
-  where,
-  getDocs
-} from "firebase/firestore";
+import { useState, useEffect, useRef } from "react";
+import { auth } from "../../firebase/config";
 
 export default function TutorialCard({
   tutorial,
   dark,
   onDelete,
   isOwner,
-  purchasedIds = [] // ✅ passed from parent (OPTIMIZED)
+  purchasedIds = []
 }) {
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
+
+  const playerRef = useRef(null);
+  const intervalRef = useRef(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
   // ============================
-  // 🔐 CHECK ACCESS (FAST VERSION)
+  // 🔐 ACCESS CHECK
   // ============================
   useEffect(() => {
     const user = auth.currentUser;
@@ -31,14 +29,92 @@ export default function TutorialCard({
       return;
     }
 
-    // ✅ FAST CHECK (NO FIRESTORE QUERY PER CARD)
-    const access = purchasedIds.includes(tutorial.id);
-    setHasAccess(access);
+    setHasAccess(purchasedIds.includes(tutorial.id));
     setLoading(false);
   }, [tutorial.id, purchasedIds]);
 
   // ============================
-  // 💳 HANDLE BUY
+  // 📺 LOAD YOUTUBE API
+  // ============================
+  useEffect(() => {
+    if (!window.YT) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+    }
+  }, []);
+
+  // ============================
+  // 🎥 EXTRACT VIDEO ID
+  // ============================
+  const getVideoId = (url) => {
+    if (!url) return null;
+
+    if (url.includes("watch?v=")) {
+      return url.split("watch?v=")[1].split("&")[0];
+    }
+
+    if (url.includes("youtu.be/")) {
+      return url.split("youtu.be/")[1].split("?")[0];
+    }
+
+    if (url.includes("embed/")) {
+      return url.split("embed/")[1].split("?")[0];
+    }
+
+    return null;
+  };
+
+  // ============================
+  // 🎬 PLAYER INIT
+  // ============================
+  useEffect(() => {
+    if (loading) return;
+
+    const videoId = getVideoId(tutorial.videoUrl);
+    if (!videoId) return;
+
+    const wait = setInterval(() => {
+      if (window.YT && window.YT.Player) {
+        clearInterval(wait);
+
+        const player = new window.YT.Player(playerRef.current, {
+          height: "160",
+          width: "100%",
+          videoId,
+          playerVars: {
+            modestbranding: 1,
+            rel: 0
+          },
+          events: {
+            onReady: (event) => {
+              if (!hasAccess) {
+                event.target.playVideo();
+
+                intervalRef.current = setInterval(() => {
+                  const time = event.target.getCurrentTime();
+
+                  if (time >= 30) {
+                    event.target.pauseVideo();
+                    setLocked(true);
+                    clearInterval(intervalRef.current);
+                  }
+                }, 1000);
+              }
+            }
+          }
+        });
+      }
+    }, 300);
+
+    return () => {
+      clearInterval(wait);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [tutorial.id, hasAccess, loading]);
+
+  // ============================
+  // 💳 BUY
   // ============================
   const handleBuy = async () => {
     try {
@@ -65,18 +141,12 @@ export default function TutorialCard({
 
       if (!res.ok) {
         const errText = await res.text();
-        console.error("PAY ERROR:", errText);
-        alert("Payment request failed");
+        console.error(errText);
+        alert("Payment failed");
         return;
       }
 
       const data = await res.json();
-
-      if (!data?.data?.link) {
-        alert("Payment link not received");
-        return;
-      }
-
       window.location.href = data.data.link;
     } catch (err) {
       console.error(err);
@@ -85,7 +155,7 @@ export default function TutorialCard({
   };
 
   // ============================
-  // ⏳ LOADING STATE
+  // ⏳ LOADING
   // ============================
   if (loading) {
     return (
@@ -101,17 +171,24 @@ export default function TutorialCard({
         dark ? "bg-[#1e293b]" : "bg-white"
       }`}
     >
-      {/* ============================ */}
-      {/* 🎥 VIDEO / PREVIEW */}
-      {/* ============================ */}
+      {/* 🎥 VIDEO */}
       <div className="relative">
-        <iframe
-          src={hasAccess ? tutorial.videoUrl : tutorial.previewUrl}
-          className="w-full h-40"
-          allowFullScreen
-        />
+        <div ref={playerRef} className="w-full h-50 bg-black" />
 
-        {/* OWNER DELETE */}
+        {/* 🔒 LOCKED AFTER 30s */}
+        {!hasAccess && locked && (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white text-sm">
+            ⏱ Preview ended
+            <button
+              onClick={handleBuy}
+              className="mt-2 bg-blue-600 px-3 py-1 rounded"
+            >
+              Unlock for ₦{tutorial.price}
+            </button>
+          </div>
+        )}
+
+        {/* 🗑 DELETE */}
         {isOwner && (
           <button
             onClick={() => onDelete(tutorial.id, tutorial.tutorId)}
@@ -122,21 +199,20 @@ export default function TutorialCard({
         )}
       </div>
 
-      {/* ============================ */}
       {/* 📄 CONTENT */}
-      {/* ============================ */}
       <div className="p-4">
         <h2 className="font-semibold text-lg mb-1 line-clamp-1">
           {tutorial.title}
         </h2>
 
+        <p className="text-xs opacity-60 mt-1">
+          By {tutorial.tutorName || "Unknown Tutor"}
+        </p>
+
         <p className="text-sm opacity-70 line-clamp-2">
           {tutorial.description}
         </p>
 
-        {/* ============================ */}
-        {/* 💰 ACTION */}
-        {/* ============================ */}
         <div className="mt-3">
           {hasAccess ? (
             <span className="text-green-500 text-sm font-medium">
@@ -145,7 +221,7 @@ export default function TutorialCard({
           ) : (
             <button
               onClick={handleBuy}
-              className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl transition"
+              className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl"
             >
               Buy for ₦{tutorial.price}
             </button>

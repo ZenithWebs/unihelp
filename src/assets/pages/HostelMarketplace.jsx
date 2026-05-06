@@ -315,7 +315,7 @@ export default function HostelMarketplace({ dark }) {
         {/* FLOAT BUTTON */}
         <button
           onClick={() => setShowUpload(true)}
-          className="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-110 transition"
+          className="fixed bottom-30 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:scale-110 transition"
         >
           <PlusCircle />
         </button>

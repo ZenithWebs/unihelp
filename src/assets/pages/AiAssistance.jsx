@@ -426,11 +426,11 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
     }, [tokens]);
   return (
     <div
-      className={`min-h-screen w-full px-4 py-6 ${
+      className={`min-h-screen w-full px-4 py-2 ${
         dark ? "bg-[#0b0f1a] text-white" : "bg-gray-100 text-gray-900"
       }`}
     >
-      <div className="max-w-4xl mx-auto flex flex-col h-[85vh]">
+      <div className="max-w-4xl mx-auto flex flex-col h-[84vh]">
 
         <div className="flex items-center gap-3 mb-4">
           <div className="p-3 bg-indigo-500 rounded-xl text-white">
@@ -446,14 +446,13 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
         </div>
 
         <div
-          className={`p-4 rounded-xl flex gap-3 mb-4 ${
+          className={`p-2.5 rounded-xl flex gap-3 mb-4 ${
             dark ? "bg-[#111827]" : "bg-white"
           }`}
         >
-          <Lightbulb className="text-yellow-500 mt-1" />
+          <Lightbulb className="text-yellow-500 mt-1" size={20} />
           <p className="text-sm">
-            Tip: Ask things like "Explain this topic", "Solve this question",
-            or "How can I improve my CGPA?"
+            Tip: Ask things like "Explain this topic", "Solve this question", or "How can I improve my CGPA?"
           </p>
         </div>
 
@@ -535,19 +534,6 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
           )}
         </div>
         <div className="flex justify-between items-center max-md:flex-col p-2.5">
-          <div className="flex items-center gap-2">
-            <label className="flex gap-1.5 h-10 w-25 justify-center items-center bg-indigo-600 rounded text-white cursor-pointer text-sm ">
-              <Plus size={23}/> Upload
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-                
-              />
-            </label>
-
-          </div>
 
 
           {activeDoc && (
@@ -581,10 +567,20 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
           
 
         <div
-          className={`mt-4 p-3 rounded-xl flex gap-2 ${
+          className={`p-3 rounded-xl flex items-center gap-2 ${
             dark ? "bg-[#111827]" : "bg-white"
           }`}
         >
+          <label className="flex gap-1.5 h-10 w-10 justify-center items-center bg-indigo-600 rounded text-white cursor-pointer text-sm ">
+              <Plus size={23}/>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+                
+              />
+            </label>
           <input
             type="text"
             placeholder="Ask something..."
@@ -600,9 +596,9 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
 
           <button
             onClick={handleSend}
-            className="bg-indigo-500 text-white px-4 rounded hover:bg-indigo-600 transition"
+            className="bg-indigo-500 flex justify-center items-center h-12 w-12 text-white rounded hover:bg-indigo-600 transition"
           >
-            <Send size={18} />
+            <Send size={20} />
           </button>
         </div>
       </div>

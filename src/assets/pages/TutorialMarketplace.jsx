@@ -14,6 +14,7 @@ import { Link } from "react-router-dom";
 export default function TutorialMarketplace({ dark }) {
   const [tutorials, setTutorials] = useState([]);
   const [purchases, setPurchases] = useState([]);
+  const [categories, setCategories] = useState(["All"]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
@@ -23,13 +24,32 @@ export default function TutorialMarketplace({ dark }) {
   // ============================
   const fetchTutorials = async () => {
     setLoading(true);
+
     const snap = await getDocs(collection(db, "tutorials"));
-    setTutorials(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const data = snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+
+    setTutorials(data);
+
+    // ✅ BUILD UNIQUE CATEGORY LIST
+    const uniqueCategories = [
+      "All",
+      ...new Set(
+        data
+          .map(t => t.category?.trim())
+          .filter(Boolean)
+      )
+    ];
+
+    setCategories(uniqueCategories);
+
     setLoading(false);
   };
 
   // ============================
-  // 💰 FETCH USER PURCHASES (OPTIMIZED)
+  // 💰 FETCH PURCHASES (OPTIMIZED)
   // ============================
   const fetchPurchases = async () => {
     if (!auth.currentUser) return;
@@ -49,12 +69,18 @@ export default function TutorialMarketplace({ dark }) {
   }, []);
 
   // ============================
-  // 🔍 FILTERS
+  // 🔍 FILTERS (FIXED)
   // ============================
-  const filtered = tutorials.filter(t =>
-    (category === "All" || t.category === category) &&
-    t.title?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = tutorials.filter(t => {
+    const matchesCategory =
+      category === "All" ||
+      t.category?.toLowerCase() === category.toLowerCase();
+
+    const matchesSearch =
+      t.title?.toLowerCase().includes(search.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
 
   // ============================
   // 🗑 DELETE
@@ -65,28 +91,27 @@ export default function TutorialMarketplace({ dark }) {
       return;
     }
 
-    const confirmDelete = window.confirm("Delete this tutorial?");
-    if (!confirmDelete) return;
+    if (!window.confirm("Delete this tutorial?")) return;
 
     await deleteDoc(doc(db, "tutorials", id));
     fetchTutorials();
   };
 
   return (
-    <div className={`${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"} min-h-screen p-6`}>
+    <div className={`${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"} min-h-screen w-full p-6`}>
 
       {/* HEADER LINK */}
       <Link
         to="/creatordashboard"
-        className="flex justify-center items-center p-2.5 rounded-lg bg-indigo-500 text-white mb-3.5 w-40 h-10 cursor-pointer hover:bg-indigo-400 ml-auto"
+        className="flex justify-center items-center p-2.5 rounded-lg bg-indigo-500 text-white mb-3.5 w-44 h-10 hover:bg-indigo-400 ml-auto"
       >
-        Are you a Tutor?
+        Become a Tutor
       </Link>
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-3">
-        <h1 className="text-3xl flex gap-1.5 items-center font-bold tracking-tight">
-          <GraduationCapIcon size={35} className="text-indigo-500" />
+        <h1 className="text-3xl flex gap-2 items-center font-bold">
+          <GraduationCapIcon size={32} className="text-indigo-500" />
           Explore Tutorials
         </h1>
 
@@ -99,9 +124,9 @@ export default function TutorialMarketplace({ dark }) {
         />
       </div>
 
-      {/* FILTERS */}
+      {/* 🔥 DYNAMIC CATEGORY FILTER */}
       <div className="flex gap-3 mb-6 flex-wrap">
-        {["All", "Programming", "Design", "Business"].map(cat => (
+        {categories.map(cat => (
           <button
             key={cat}
             onClick={() => setCategory(cat)}
@@ -135,7 +160,7 @@ export default function TutorialMarketplace({ dark }) {
             key={tutorial.id}
             tutorial={tutorial}
             dark={dark}
-            purchasedIds={purchases}   // ✅ FIXED
+            purchasedIds={purchases}
             onDelete={handleDelete}
             isOwner={auth.currentUser?.uid === tutorial.tutorId}
           />

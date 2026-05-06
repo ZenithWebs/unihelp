@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 
 const Card = ({title, description, url, icon, background, dark}) => {
   return (
-    <Link to={url} className={`flex flex-1 w-full items-start gap-2.5 border  p-2 rounded-lg shadow ${dark ? 'border-slate-700' : 'border-slate-200' }`}>
+    <Link to={url} className={`flex w-full items-start gap-2.5 border  p-2 rounded-lg shadow ${dark ? 'border-slate-700' : 'border-slate-200' }`}>
       <div className={`flex justify-center rounded-lg items-center h-15 w-15 ${background} text-white`} >
         {icon}
       </div>

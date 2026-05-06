@@ -7,71 +7,135 @@ export default function UploadTutorial({ dark }) {
     title: "",
     description: "",
     price: "",
-    category: "Programming",
+    category: "",
     videoUrl: "",
-    previewUrl: ""
+    previewUrl: "",
+    tutorName: ""
   });
 
   const [loading, setLoading] = useState(false);
 
+  // ============================
+  // 🎥 FIX YOUTUBE URL
+  // ============================
+  const getEmbedUrl = (url) => {
+    if (!url) return "";
+
+    if (url.includes("watch?v=")) {
+      return url.replace("watch?v=", "embed/");
+    }
+
+    if (url.includes("youtu.be/")) {
+      const id = url.split("youtu.be/")[1];
+      return `https://www.youtube.com/embed/${id}`;
+    }
+
+    return url;
+  };
+
+  // ============================
+  // ✅ VALIDATION
+  // ============================
+  const isValidUrl = (url) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // ============================
+  // 🚀 SUBMIT
+  // ============================
   const handleSubmit = async () => {
-    if (!form.title || !form.videoUrl || !form.price) {
+    if (!form.title || !form.videoUrl || !form.price || !form.tutorName) {
       alert("Please fill all required fields");
       return;
     }
 
-    setLoading(true);
+    if (!isValidUrl(form.videoUrl)) {
+      alert("Invalid video URL");
+      return;
+    }
 
-    await addDoc(collection(db, "tutorials"), {
-      ...form,
-      price: Number(form.price),
-      tutorId: auth.currentUser.uid,
-      subaccountId: "TUTOR_SUB_ID",
-      createdAt: new Date()
-    });
+    if (form.previewUrl && !isValidUrl(form.previewUrl)) {
+      alert("Invalid preview URL");
+      return;
+    }
 
-    setLoading(false);
-    alert("✅ Tutorial uploaded!");
+    if (!auth.currentUser) {
+      alert("You must be logged in");
+      return;
+    }
 
-    setForm({
-      title: "",
-      description: "",
-      price: "",
-      category: "Programming",
-      videoUrl: "",
-      previewUrl: ""
-    });
+    try {
+      setLoading(true);
+
+      await addDoc(collection(db, "tutorials"), {
+        ...form,
+        videoUrl: getEmbedUrl(form.videoUrl),
+        previewUrl: getEmbedUrl(form.previewUrl),
+        price: Number(form.price),
+        tutorId: auth.currentUser.uid,
+        createdAt: new Date()
+      });
+
+      alert("✅ Tutorial uploaded!");
+
+      setForm({
+        title: "",
+        description: "",
+        price: "",
+        category: "",
+        videoUrl: "",
+        previewUrl: "",
+        tutorName: ""
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const previewSrc = getEmbedUrl(form.previewUrl);
 
   return (
     <div className={`${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"} min-h-screen p-6`}>
       
       {/* HEADER */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">
-          🎬 Creator Studio
-        </h1>
-        <p className="opacity-70 text-sm">
-          Upload and monetize your tutorials
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">🎬 Creator Studio</h1>
+        <p className="opacity-70 text-sm">Upload and monetize your tutorials</p>
       </div>
 
       {/* MAIN CARD */}
       <div
-        className={`max-w-2xl w-full mx-auto rounded-2xl p-6 shadow-xl backdrop-blur-lg ${
-          dark
-            ? "bg-[#1e293b]/80 border border-gray-700"
-            : "bg-white border"
+        className={`max-w-2xl w-full mx-auto rounded-2xl p-6 shadow-xl ${
+          dark ? "bg-[#1e293b]/80 border border-gray-700" : "bg-white border"
         }`}
       >
+        {/* TUTOR NAME */}
+        <div className="mb-4">
+          <label className="text-sm opacity-70">Tutor Name</label>
+          <input
+            value={form.tutorName}
+            placeholder="e.g. John Doe"
+            className="input-premium"
+            onChange={(e) => setForm({ ...form, tutorName: e.target.value })}
+          />
+        </div>
+
         {/* TITLE */}
         <div className="mb-4">
           <label className="text-sm opacity-70">Title</label>
           <input
             value={form.title}
-            placeholder="e.g. React for Beginners"
+            placeholder="e.g. Engineering Mathematics"
             className="input-premium"
-            onChange={e => setForm({ ...form, title: e.target.value })}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
         </div>
 
@@ -82,7 +146,7 @@ export default function UploadTutorial({ dark }) {
             value={form.description}
             placeholder="Describe your tutorial..."
             className="input-premium h-24"
-            onChange={e => setForm({ ...form, description: e.target.value })}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </div>
 
@@ -96,22 +160,19 @@ export default function UploadTutorial({ dark }) {
               value={form.price}
               placeholder="1000"
               className="input-premium"
-              onChange={e => setForm({ ...form, price: e.target.value })}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
             />
           </div>
 
-          {/* CATEGORY */}
+          {/* CATEGORY (NOW CUSTOM) */}
           <div>
             <label className="text-sm opacity-70">Category</label>
-            <select
+            <input
               value={form.category}
+              placeholder="e.g. Programming, AI, Design"
               className="input-premium"
-              onChange={e => setForm({ ...form, category: e.target.value })}
-            >
-              <option>Programming</option>
-              <option>Design</option>
-              <option>Business</option>
-            </select>
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+            />
           </div>
         </div>
 
@@ -120,31 +181,30 @@ export default function UploadTutorial({ dark }) {
           <label className="text-sm opacity-70">Full Video URL</label>
           <input
             value={form.videoUrl}
-            placeholder="Vimeo / YouTube embed link"
+            placeholder="Paste YouTube or Vimeo link"
             className="input-premium"
-            onChange={e => setForm({ ...form, videoUrl: e.target.value })}
+            onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
           />
         </div>
 
         {/* PREVIEW */}
         <div className="mb-4">
-          <label className="text-sm opacity-70">
-            Preview Video (30 sec)
-          </label>
+          <label className="text-sm opacity-70">Preview Video (optional)</label>
           <input
             value={form.previewUrl}
             placeholder="Short preview link"
             className="input-premium"
-            onChange={e => setForm({ ...form, previewUrl: e.target.value })}
+            onChange={(e) => setForm({ ...form, previewUrl: e.target.value })}
           />
         </div>
 
         {/* PREVIEW PLAYER */}
-        {form.previewUrl && (
+        {previewSrc && (
           <div className="mb-4 rounded-xl overflow-hidden">
             <iframe
-              src={form.previewUrl}
+              src={previewSrc}
               className="w-full h-40"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
           </div>
