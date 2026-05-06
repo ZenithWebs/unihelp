@@ -11,9 +11,11 @@ export default function TutorialCard({
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
 
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
+  const playerInstance = useRef(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -29,7 +31,10 @@ export default function TutorialCard({
       return;
     }
 
-    setHasAccess(purchasedIds.includes(tutorial.id));
+    const hasPurchased = purchasedIds.includes(tutorial.id);
+
+    setHasAccess(hasPurchased);
+    setLocked(!hasPurchased); // 🔥 reset lock properly
     setLoading(false);
   }, [tutorial.id, purchasedIds]);
 
@@ -78,6 +83,11 @@ export default function TutorialCard({
       if (window.YT && window.YT.Player) {
         clearInterval(wait);
 
+        // destroy old player if exists
+        if (playerInstance.current) {
+          playerInstance.current.destroy();
+        }
+
         const player = new window.YT.Player(playerRef.current, {
           height: "160",
           width: "100%",
@@ -104,12 +114,17 @@ export default function TutorialCard({
             }
           }
         });
+
+        playerInstance.current = player;
       }
     }, 300);
 
     return () => {
       clearInterval(wait);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (playerInstance.current) {
+        playerInstance.current.destroy();
+      }
     };
   }, [tutorial.id, hasAccess, loading]);
 
@@ -122,6 +137,8 @@ export default function TutorialCard({
         alert("Login first");
         return;
       }
+
+      setIsPaying(true);
 
       const token = await auth.currentUser.getIdToken();
 
@@ -143,14 +160,18 @@ export default function TutorialCard({
         const errText = await res.text();
         console.error(errText);
         alert("Payment failed");
+        setIsPaying(false);
         return;
       }
 
       const data = await res.json();
+
+      // redirect to payment
       window.location.href = data.data.link;
     } catch (err) {
       console.error(err);
       alert("Payment failed");
+      setIsPaying(false);
     }
   };
 
@@ -159,7 +180,11 @@ export default function TutorialCard({
   // ============================
   if (loading) {
     return (
-      <div className={`p-4 rounded-2xl ${dark ? "bg-[#1e293b]" : "bg-white"}`}>
+      <div
+        className={`p-4 rounded-2xl ${
+          dark ? "bg-[#1e293b]" : "bg-white"
+        }`}
+      >
         Loading...
       </div>
     );
@@ -175,15 +200,23 @@ export default function TutorialCard({
       <div className="relative">
         <div ref={playerRef} className="w-full h-50 bg-black" />
 
-        {/* 🔒 LOCKED AFTER 30s */}
+        {/* 🔒 LOCKED AFTER PREVIEW */}
         {!hasAccess && locked && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white text-sm">
             ⏱ Preview ended
+
             <button
               onClick={handleBuy}
-              className="mt-2 bg-blue-600 px-3 py-1 rounded"
+              disabled={isPaying}
+              className={`mt-2 px-3 py-1 rounded text-white ${
+                isPaying
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600"
+              }`}
             >
-              Unlock for ₦{tutorial.price}
+              {isPaying
+                ? "Processing..."
+                : `Unlock for ₦${tutorial.price}`}
             </button>
           </div>
         )}
@@ -221,9 +254,16 @@ export default function TutorialCard({
           ) : (
             <button
               onClick={handleBuy}
-              className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl"
+              disabled={isPaying}
+              className={`w-full mt-2 py-2 rounded-xl text-white transition ${
+                isPaying
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
             >
-              Buy for ₦{tutorial.price}
+              {isPaying
+                ? "Processing payment..."
+                : `Buy for ₦${tutorial.price}`}
             </button>
           )}
         </div>
