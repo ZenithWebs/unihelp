@@ -14,7 +14,11 @@ export default function TutorialCard({
   isOwner
 }) {
   const [hasAccess, setHasAccess] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL;
 
+  // ============================
+  // 🔐 CHECK PURCHASE ACCESS
+  // ============================
   useEffect(() => {
     const checkAccess = async () => {
       if (!auth.currentUser) return;
@@ -32,25 +36,38 @@ export default function TutorialCard({
     checkAccess();
   }, [tutorial.id]);
 
+  // ============================
+  // 💳 HANDLE BUY
+  // ============================
   const handleBuy = async () => {
-    localStorage.setItem("tutorialId", tutorial.id);
-    const API_URL = import.meta.env.VITE_API_URL;
+    try {
+      if (!auth.currentUser) return alert("Login first");
 
-    const res = await fetch(`${API_URL}/pay`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        amount: tutorial.price,
-        email: auth.currentUser.email,
-        subaccountId: tutorial.subaccountId,
-        tx_ref: "tx_" + Date.now()
-      })
-    });
+      const res = await fetch(`${API_URL}/api/pay`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          amount: tutorial.price,
+          email: auth.currentUser.email,
+          tutorialId: tutorial.id,
+          userId: auth.currentUser.uid,
+          tutorId: tutorial.tutorId
+        })
+      });
 
-    const data = await res.json();
-    window.location.href = data.data.link;
+      const data = await res.json();
+
+      if (!data.data?.link) {
+        return alert("Payment error");
+      }
+
+      window.location.href = data.data.link;
+    } catch (err) {
+      console.error(err);
+      alert("Payment failed");
+    }
   };
 
   return (
@@ -67,7 +84,7 @@ export default function TutorialCard({
           allowFullScreen
         />
 
-        {/* OWNER DELETE BUTTON */}
+        {/* OWNER DELETE */}
         {isOwner && (
           <button
             onClick={() => onDelete(tutorial.id, tutorial.tutorId)}
@@ -88,7 +105,7 @@ export default function TutorialCard({
           {tutorial.description}
         </p>
 
-        {/* PRICE / ACTION */}
+        {/* ACTION */}
         <div className="mt-3">
           {hasAccess ? (
             <span className="text-green-500 text-sm font-medium">
