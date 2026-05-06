@@ -308,8 +308,9 @@ if (freshBalance < COST_PER_MESSAGE) {
 
     // 🔐 TOKEN (for future auth backend)
     const token = await auth.currentUser?.getIdToken();
+      const API_URL = import.meta.env.VITE_API_URL;
 
-    const res = await fetch("http://localhost:3001/api/ai/chat", {
+      const res = await fetch(`${API_URL}/api/ai/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

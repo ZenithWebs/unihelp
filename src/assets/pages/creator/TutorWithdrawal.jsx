@@ -9,85 +9,115 @@ import {
 } from "firebase/firestore";
 
 export default function TutorWithdrawal({ dark }) {
+  const [user, setUser] = useState(null);
+
   const [earnings, setEarnings] = useState(0);
   const [withdrawn, setWithdrawn] = useState(0);
   const [amount, setAmount] = useState("");
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
 
-  const tutorId = auth.currentUser?.uid;
+  const tutorId = user?.uid;
 
   // ===============================
-  // FETCH EARNINGS + WITHDRAWALS
+  // AUTH LISTENER (FIXED)
   // ===============================
-  const fetchData = async () => {
-    if (!tutorId) return;
-
-    // 🎓 earnings
-    const earnSnap = await getDocs(
-      query(collection(db, "tutorEarnings"), where("tutorId", "==", tutorId))
-    );
-
-    let totalEarned = 0;
-
-    earnSnap.forEach(doc => {
-      totalEarned += doc.data().amount || 0;
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged((u) => {
+      setUser(u);
     });
 
-    // 💸 withdrawals
-    const withdrawSnap = await getDocs(
-      query(collection(db, "withdrawals"), where("tutorId", "==", tutorId))
-    );
+    return () => unsub();
+  }, []);
 
-    let totalWithdrawn = 0;
-    const list = [];
+  // ===============================
+  // FETCH DATA
+  // ===============================
+  const fetchData = async (uid) => {
+    if (!uid) return;
 
-    withdrawSnap.forEach(doc => {
-      const data = doc.data();
+    setFetching(true);
 
-      if (data.status === "paid") {
-        totalWithdrawn += data.amount;
-      }
+    try {
+      // 🎓 Earnings
+      const earnSnap = await getDocs(
+        query(collection(db, "tutorEarnings"), where("tutorId", "==", uid))
+      );
 
-      list.push({ id: doc.id, ...data });
-    });
+      let totalEarned = 0;
 
-    setEarnings(totalEarned);
-    setWithdrawn(totalWithdrawn);
-    setHistory(list);
+      earnSnap.forEach((doc) => {
+        totalEarned += Number(doc.data().amount || 0);
+      });
+
+      // 💸 Withdrawals
+      const withdrawSnap = await getDocs(
+        query(collection(db, "withdrawals"), where("tutorId", "==", uid))
+      );
+
+      let totalWithdrawn = 0;
+      const list = [];
+
+      withdrawSnap.forEach((doc) => {
+        const data = doc.data();
+
+        if (data.status === "paid") {
+          totalWithdrawn += Number(data.amount || 0);
+        }
+
+        list.push({ id: doc.id, ...data });
+      });
+
+      setEarnings(totalEarned);
+      setWithdrawn(totalWithdrawn);
+      setHistory(list);
+    } catch (err) {
+      console.log("Fetch error:", err);
+    }
+
+    setFetching(false);
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) fetchData(user.uid);
+  }, [user]);
 
   const availableBalance = earnings - withdrawn;
 
   // ===============================
-  // REQUEST WITHDRAWAL
+  // WITHDRAW REQUEST
   // ===============================
   const requestWithdraw = async () => {
-    if (!amount || amount <= 0) return alert("Enter valid amount");
-    if (amount > availableBalance) return alert("Insufficient balance");
+  const amt = Number(amount);
 
-    setLoading(true);
+  setLoading(true);
 
-    await addDoc(collection(db, "withdrawals"), {
+  const res = await fetch(`${API_URL}/api/withdraw`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
       tutorId,
-      amount: Number(amount),
-      status: "pending",
-      createdAt: new Date()
-    });
+      amount: amt
+    })
+  });
 
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error);
+  } else {
+    alert("Request sent for approval");
     setAmount("");
-    setLoading(false);
+  }
 
-    alert("Withdrawal request sent ✅");
-    fetchData();
-  };
+  setLoading(false);
+};
 
   // ===============================
-  // UI CARD
+  // CARD UI
   // ===============================
   const Card = ({ title, value, color }) => (
     <div
@@ -103,8 +133,11 @@ export default function TutorWithdrawal({ dark }) {
   );
 
   return (
-    <div className={`${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"} min-h-screen w-full mt-15 p-6`}>
-      
+    <div
+      className={`${
+        dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"
+      } min-h-screen w-full p-6`}
+    >
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold">💸 Withdraw Earnings</h1>
@@ -113,9 +146,13 @@ export default function TutorWithdrawal({ dark }) {
         </p>
       </div>
 
+      {/* LOADING */}
+      {fetching && (
+        <p className="mb-4 opacity-70">Loading data...</p>
+      )}
+
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-
         <Card
           title="Total Earned"
           value={`₦${earnings}`}
@@ -133,12 +170,14 @@ export default function TutorWithdrawal({ dark }) {
           value={`₦${availableBalance}`}
           color="text-yellow-500"
         />
-
       </div>
 
       {/* WITHDRAW BOX */}
-      <div className={`${dark ? "bg-[#1e293b]" : "bg-white"} p-5 rounded-2xl shadow mb-6`}>
-        
+      <div
+        className={`${
+          dark ? "bg-[#1e293b]" : "bg-white"
+        } p-5 rounded-2xl shadow mb-6`}
+      >
         <h2 className="text-xl font-semibold mb-3">
           Request Withdrawal
         </h2>
@@ -146,15 +185,15 @@ export default function TutorWithdrawal({ dark }) {
         <input
           type="number"
           value={amount}
-          onChange={e => setAmount(e.target.value)}
+          onChange={(e) => setAmount(e.target.value)}
           placeholder="Enter amount (₦)"
           className="w-full p-3 rounded-xl border bg-transparent mb-3 outline-none"
         />
 
         <button
           onClick={requestWithdraw}
-          disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold"
+          disabled={loading || availableBalance <= 0}
+          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold disabled:opacity-50"
         >
           {loading ? "Processing..." : "Request Withdrawal"}
         </button>
@@ -165,18 +204,23 @@ export default function TutorWithdrawal({ dark }) {
       </div>
 
       {/* HISTORY */}
-      <div className={`${dark ? "bg-[#1e293b]" : "bg-white"} p-5 rounded-2xl shadow`}>
-        
+      <div
+        className={`${
+          dark ? "bg-[#1e293b]" : "bg-white"
+        } p-5 rounded-2xl shadow`}
+      >
         <h2 className="text-xl font-semibold mb-4">
           📜 Withdrawal History
         </h2>
 
         {history.length === 0 && (
-          <p className="opacity-60">No withdrawal requests yet</p>
+          <p className="opacity-60">
+            No withdrawal requests yet
+          </p>
         )}
 
         <div className="space-y-3">
-          {history.map(item => (
+          {history.map((item) => (
             <div
               key={item.id}
               className={`p-4 rounded-xl flex justify-between items-center ${
@@ -206,7 +250,6 @@ export default function TutorWithdrawal({ dark }) {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );

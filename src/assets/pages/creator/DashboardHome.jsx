@@ -17,67 +17,86 @@ export default function DashboardHome({ dark }) {
 
   const [recentEarnings, setRecentEarnings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
-  const tutorId = auth.currentUser?.uid;
+  const tutorId = user?.uid;
+
+  // ===============================
+  // AUTH LISTENER (FIXED)
+  // ===============================
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged((u) => {
+      setUser(u);
+    });
+
+    return () => unsub();
+  }, []);
 
   // ===============================
   // FETCH DASHBOARD DATA
   // ===============================
-  const fetchData = async () => {
-    if (!tutorId) return;
+  const fetchData = async (uid) => {
+    if (!uid) return;
 
-    // 🎓 Tutorials
-    const tutorialsSnap = await getDocs(
-      query(collection(db, "tutorials"), where("tutorId", "==", tutorId))
-    );
+    setLoading(true);
 
-    // 💰 Earnings
-    const earningsSnap = await getDocs(
-      query(collection(db, "tutorEarnings"), where("tutorId", "==", tutorId))
-    );
+    try {
+      // 🎓 Tutorials
+      const tutorialsSnap = await getDocs(
+        query(collection(db, "tutorials"), where("tutorId", "==", uid))
+      );
 
-    // 💸 Withdrawals
-    const withdrawSnap = await getDocs(
-      query(collection(db, "withdrawals"), where("tutorId", "==", tutorId))
-    );
+      // 💰 Earnings
+      const earningsSnap = await getDocs(
+        query(collection(db, "tutorEarnings"), where("tutorId", "==", uid))
+      );
 
-    let totalEarnings = 0;
-    let totalWithdrawn = 0;
+      // 💸 Withdrawals
+      const withdrawSnap = await getDocs(
+        query(collection(db, "withdrawals"), where("tutorId", "==", uid))
+      );
 
-    const earningsList = [];
+      let totalEarnings = 0;
+      let totalWithdrawn = 0;
 
-    earningsSnap.forEach(doc => {
-      const data = doc.data();
-      totalEarnings += data.amount || 0;
+      const earningsList = [];
 
-      earningsList.push({
-        id: doc.id,
-        amount: data.amount,
-        tutorialId: data.tutorialId,
-        date: data.createdAt
+      earningsSnap.forEach(doc => {
+        const data = doc.data();
+        totalEarnings += data.amount || 0;
+
+        earningsList.push({
+          id: doc.id,
+          amount: data.amount || 0,
+          tutorialId: data.tutorialId || "N/A",
+          date: data.createdAt
+        });
       });
-    });
 
-    withdrawSnap.forEach(doc => {
-      const data = doc.data();
-      if (data.status === "paid") {
-        totalWithdrawn += data.amount;
-      }
-    });
+      withdrawSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.status === "paid") {
+          totalWithdrawn += data.amount || 0;
+        }
+      });
 
-    setStats({
-      earnings: totalEarnings,
-      tutorials: tutorialsSnap.size,
-      withdrawn: totalWithdrawn
-    });
+      setStats({
+        earnings: totalEarnings,
+        tutorials: tutorialsSnap.size,
+        withdrawn: totalWithdrawn
+      });
 
-    setRecentEarnings(earningsList.slice(-5).reverse());
+      setRecentEarnings(earningsList.slice(-5).reverse());
+    } catch (err) {
+      console.log("Dashboard error:", err);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) fetchData(user.uid);
+  }, [user]);
 
   const available = stats.earnings - stats.withdrawn;
 
@@ -95,19 +114,27 @@ export default function DashboardHome({ dark }) {
   );
 
   return (
-    <div className={`${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"} min-h-screen p-6`}>
-      
+    <div className={`${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"} min-h-screen p-6`}
+    >
       {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">🎓 Tutor Dashboard</h1>
-        <p className="text-sm opacity-70">
-          Track your earnings and performance
-        </p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">🎓 Tutor Dashboard</h1>
+          <p className="text-sm opacity-70">
+            Track your earnings and performance
+          </p>
+        </div>
+
+        <Link
+          to="/withdraw"
+          className="bg-green-600 text-white px-4 py-2 rounded-xl text-sm"
+        >
+          Withdraw
+        </Link>
       </div>
 
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-
         <Card
           title="Total Earnings"
           value={`₦${stats.earnings}`}
@@ -125,13 +152,11 @@ export default function DashboardHome({ dark }) {
           value={stats.tutorials}
           color="text-blue-500"
         />
-
       </div>
 
-
       {/* RECENT EARNINGS */}
-      <div className={`${dark ? "bg-[#1e293b]" : "bg-white"} p-5 rounded-2xl shadow`}>
-        
+      <div className={`${dark ? "bg-[#1e293b]" : "bg-white"} p-5 rounded-2xl shadow`}
+      >
         <h2 className="text-xl font-semibold mb-4">
           📈 Recent Earnings
         </h2>
