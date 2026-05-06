@@ -7,7 +7,7 @@ import { AuthContext } from "../context/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import ProfilePhoto from '../components/ProfilePhoto'
-import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, FilePlayIcon, HouseIcon, LayoutDashboardIcon, LogOut, NewspaperIcon, NotebookPenIcon, PlaySquareIcon, VideoIcon } from 'lucide-react';
+import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, HouseIcon, LayoutDashboardIcon, LogOut, NewspaperIcon, NotebookPenIcon, PlaySquareIcon, Video, VideoIcon } from 'lucide-react';
 
 const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
 
@@ -33,11 +33,13 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
 
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/questions'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <File className=''/> Past Questions</NavLink>
 
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/tutorials'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <PlaySquareIcon className=''/> Tutorials </NavLink>
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/tutorials'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <PlaySquareIcon className=''/> Browse YT videos </NavLink>
       
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/lecturenotesmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NotebookPenIcon className=''/> Lecture Note</NavLink>
 
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/hostelmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <HouseIcon className=''/> Find Hostel</NavLink>
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/tutorialmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Video className=''/>Find Tutorials</NavLink>
 
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/newsfeed'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NewspaperIcon className=''/> Smart Feeds</NavLink>
 

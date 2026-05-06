@@ -1,5 +1,5 @@
 import { signOut } from "firebase/auth";
-import { Brain, CalculatorIcon, ChevronRight, CloudUploadIcon, File, HomeIcon, LayoutDashboardIcon, LogOut, MessageCircle, NotebookPenIcon, PlaySquare, User } from 'lucide-react'
+import { Brain, CalculatorIcon, ChevronRight, CloudUploadIcon, File, HomeIcon, LayoutDashboardIcon, LogOut, MessageCircle, NotebookPenIcon, PlaySquare, User, VideoIcon, YoutubeIcon } from 'lucide-react'
 import {React, useContext, useEffect, useState} from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { auth, db } from "../../firebase/config";
@@ -19,7 +19,7 @@ const handleLogout = async () => {
   navigate('/');
 };
   return (
-    <div className={`pt-22 flex flex-col gap-2.5 w-70 h-screen max-md:hidden p-10 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100 text-black' }`}>
+    <div className={`pt-22 flex flex-col gap-2 w-70 h-screen max-md:hidden p-10 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100 text-black' }`}>
       
       <NavLink to={'/dashboard'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <LayoutDashboardIcon className=''/> Dashboard</NavLink>
 
@@ -29,11 +29,14 @@ const handleLogout = async () => {
 
       <NavLink to={'/questions'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <File className=''/> Past Questions</NavLink>
 
-      <NavLink to={'/tutorials'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <PlaySquare className=''/> Tutorials</NavLink>
+      <NavLink to={'/tutorials'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <YoutubeIcon className=''/> YT Videos</NavLink>
 
       <NavLink to={'/lecturenotesmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NotebookPenIcon className=''/> Lecture Note</NavLink>
 
       <NavLink to={'/hostelmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <HomeIcon className=''/> Find Hostel </NavLink>
+
+
+      <NavLink to={'/tutorialmarketplace'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <VideoIcon className=''/> Find Tutorials </NavLink>
       
 
       <NavLink to={'/ai'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI Assistance</NavLink>

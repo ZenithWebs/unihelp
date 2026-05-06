@@ -21,6 +21,12 @@ import TutorialPage from './assets/pages/Tutorials';
 import MyHostels from './assets/pages/MyUploadedHostel';
 import AdminHostelApproval from './assets/pages/AdminHostelApproval';
 import InstallPrompt from './assets/components/InstallPrompt';
+import UploadTutorial from './assets/pages/creator/UploadTutorial';
+import TutorialMarketplace from './assets/pages/TutorialMarketplace';
+import CreatorDashboard from './assets/pages/creator/CreatorDashboard';
+import { Database } from 'lucide-react';
+import AdminDashboard from './assets/pages/AdminDashboard';
+import TutorWithdrawal from './assets/pages/creator/TutorWithdrawal';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,16 +43,29 @@ const App = () => {
     <InstallPrompt/>
       <div className={dark ? "bg-slate-900 text-white" : "bg-white text-black"}>
         <Routes>
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboard dark={dark} /></ProtectedRoute>} />
+          <Route path="/withdraw" element={<ProtectedRoute><TutorWithdrawal dark={dark} /></ProtectedRoute>} />
+          <Route path='/creatordashboard' element={<ProtectedRoute><CreatorDashboard dark={dark}/> </ProtectedRoute>}/>
+
+
           <Route path='/' element={<Login dark={dark}/>}/>
           <Route path='/register' element={<Signup dark={dark}/>}/>
           <Route element={<DashboardLayout setMenuOpen={setMenuOpen}      menuOpen={menuOpen}  dark={dark}/>}>
             <Route path='/dashboard' element={ <ProtectedRoute><Dashboard dark={dark}/></ProtectedRoute> }/>
+
             <Route path='/CGPA' element={<ProtectedRoute><CGPA dark={dark}/></ProtectedRoute>}/>
+
             <Route path='/GPA' element={<ProtectedRoute><GPA dark={dark}/></ProtectedRoute>}/>
+
             <Route path='/ai' element={<ProtectedRoute><AiAssistance dark={dark}/></ProtectedRoute>}/>
+
             <Route path='/hostelmarketplace' element={<ProtectedRoute><HostelMarketplace dark={dark}/></ProtectedRoute>}/>
 
             <Route path='/uploadquestion' element={<ProtectedRoute><Upload dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/uploadtutorial' element={<ProtectedRoute><UploadTutorial dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/tutorialmarketplace' element={<ProtectedRoute><TutorialMarketplace dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/lecturenotesmarketplace' element={<ProtectedRoute><LectureNotesMarketplace dark={dark}/> </ProtectedRoute>}/>
 

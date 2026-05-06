@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import Card from './../components/Card';
-import { Activity, Book, Calculator, ChartBar, File, HistoryIcon, Home, MessageCircle, Newspaper, NewspaperIcon, PlayIcon, Sparkles, Trash2Icon, UploadCloud } from 'lucide-react';
+import { Activity, Book, Calculator, ChartBar, File, HistoryIcon, Home, MessageCircle, Newspaper, NewspaperIcon, PlayIcon, Sparkles, Trash2Icon, UploadCloud, Video } from 'lucide-react';
 import { AuthContext } from './../context/AuthContext';
 import {
   query,
@@ -118,14 +118,14 @@ const Dashboard = ({dark}) => {
       </div>
       
 
-      <div className='grid grid-cols-1 mx-auto md:grid-cols-3 gap-5'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 mx-auto md:grid-cols-3 gap-5'>
         <Card url={'/GPA'} dark={dark} background={'bg-[#601b9b]'} icon={<Calculator/>} title={'GPA Calculator'} description={'Calculate and track your GPA'} />
 
         <Card url={'/CGPA'} dark={dark} background={'bg-[red]'} icon={<Activity/>} title={'CGPA Tracker'} description={'Track your CGPA across semesters'} />
 
         <Card url={'/questions'} dark={dark} background={'bg-[#4234a5]'} icon={<File/>} title={'Past Questions'} description={'Browse and Download Past Question'} />
         
-        <Card url={'/upload'} dark={dark} background={'bg-green-700'} icon={<UploadCloud/>} title={'Upload Document'} description={'Share  questions & important files with others'} />
+        <Card url={'/tutorialmarketplace'} dark={dark} background={'bg-green-700'} icon={<Video/>} title={'Tutorial Video'} description={'watch Tutorial video'} />
 
 
         <Card url={'/hostelmarketplace'} dark={dark} background={'bg-indigo-500'} icon={<Home/>} title={'Hostel Market Place'} description={'Find verify hostel near your campus'} />

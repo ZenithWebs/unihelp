@@ -4,6 +4,15 @@
     font-family: "Inter", sans-serif;
     transition: all .5s;
 }
+.input-premium {
+  @apply w-full mt-1 px-4 py-3 rounded-xl text-base
+  outline-none transition border 
+  bg-transparent border-gray-400 
+  focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30;
+}
+.nav-btn {
+  @apply w-full text-left px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white transition;
+}
 .no-scrollbar::-webkit-scrollbar{
     display: none;
 }

@@ -14,23 +14,12 @@ export default function useAdmin() {
       }
 
       try {
-        const ref = doc(db, "users", user.uid);
-        const snap = await getDoc(ref);
+        const token = await user.getIdTokenResult();
 
-        if (!snap.exists()) {
-          setIsAdmin(false);
-          return;
-        }
+        // ✅ EMAIL CHECK
+        const isAdminEmail = user.email === "onakomayaokiki@gmail.com";
 
-        const role = snap.data().role;
-
-        // ✅ MAIN CHECK
-        if (role === "admin") {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
-
+        setIsAdmin(isAdminEmail || !!token.claims.admin);
       } catch (err) {
         console.log(err);
         setIsAdmin(false);
@@ -39,7 +28,6 @@ export default function useAdmin() {
 
     return () => unsubscribe();
   }, []);
-      
 
   return isAdmin;
 }
