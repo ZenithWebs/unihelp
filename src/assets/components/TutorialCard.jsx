@@ -16,59 +16,64 @@ export default function TutorialCard({
   const [hasAccess, setHasAccess] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
 
-  // ============================
-  // 🔐 CHECK PURCHASE ACCESS
-  // ============================
   useEffect(() => {
-    const checkAccess = async () => {
-      if (!auth.currentUser) return;
+  const checkAccess = async () => {
+    if (!auth.currentUser) return;
 
-      const q = query(
-        collection(db, "purchases"),
-        where("userId", "==", auth.currentUser.uid),
-        where("tutorialId", "==", tutorial.id)
-      );
+    const q = query(
+      collection(db, "purchases"),
+      where("userId", "==", auth.currentUser.uid),
+      where("tutorialId", "==", tutorial.id)
+    );
 
-      const snap = await getDocs(q);
-      setHasAccess(!snap.empty);
-    };
+    const snap = await getDocs(q);
+    setHasAccess(!snap.empty);
+  };
 
-    checkAccess();
-  }, [tutorial.id]);
+  checkAccess();
+}, [tutorial.id, auth.currentUser]);
 
   // ============================
   // 💳 HANDLE BUY
   // ============================
-  const handleBuy = async () => {
-    try {
-      if (!auth.currentUser) return alert("Login first");
+ const handleBuy = async () => {
+  try {
+    if (!auth.currentUser) return alert("Login first");
 
-      const res = await fetch(`${API_URL}/api/pay`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          amount: tutorial.price,
-          email: auth.currentUser.email,
-          tutorialId: tutorial.id,
-          userId: auth.currentUser.uid,
-          tutorId: tutorial.tutorId
-        })
-      });
+    const token = await auth.currentUser.getIdToken();
 
-      const data = await res.json();
+    const res = await fetch(`${API_URL}/api/pay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}` // ✅ THIS WAS MISSING
+      },
+      body: JSON.stringify({
+        amount: tutorial.price,
+        email: auth.currentUser.email,
+        tutorialId: tutorial.id,
+        tutorId: tutorial.tutorId
+      })
+    });
 
-      if (!data.data?.link) {
-        return alert("Payment error");
-      }
-
-      window.location.href = data.data.link;
-    } catch (err) {
-      console.error(err);
-      alert("Payment failed");
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(text);
+      return alert("Request failed");
     }
-  };
+
+    const data = await res.json();
+
+    if (!data.data?.link) {
+      return alert("Payment error");
+    }
+
+    window.location.href = data.data.link;
+  } catch (err) {
+    console.error(err);
+    alert("Payment failed");
+  }
+};
 
   return (
     <div
