@@ -11,69 +11,89 @@ export default function TutorialCard({
   tutorial,
   dark,
   onDelete,
-  isOwner
+  isOwner,
+  purchasedIds = [] // ✅ passed from parent (OPTIMIZED)
 }) {
   const [hasAccess, setHasAccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const API_URL = import.meta.env.VITE_API_URL;
 
+  // ============================
+  // 🔐 CHECK ACCESS (FAST VERSION)
+  // ============================
   useEffect(() => {
-  const checkAccess = async () => {
-    if (!auth.currentUser) return;
+    const user = auth.currentUser;
 
-    const q = query(
-      collection(db, "purchases"),
-      where("userId", "==", auth.currentUser.uid),
-      where("tutorialId", "==", tutorial.id)
-    );
+    if (!user) {
+      setHasAccess(false);
+      setLoading(false);
+      return;
+    }
 
-    const snap = await getDocs(q);
-    setHasAccess(!snap.empty);
-  };
-
-  checkAccess();
-}, [tutorial.id, auth.currentUser]);
+    // ✅ FAST CHECK (NO FIRESTORE QUERY PER CARD)
+    const access = purchasedIds.includes(tutorial.id);
+    setHasAccess(access);
+    setLoading(false);
+  }, [tutorial.id, purchasedIds]);
 
   // ============================
   // 💳 HANDLE BUY
   // ============================
- const handleBuy = async () => {
-  try {
-    if (!auth.currentUser) return alert("Login first");
+  const handleBuy = async () => {
+    try {
+      if (!auth.currentUser) {
+        alert("Login first");
+        return;
+      }
 
-    const token = await auth.currentUser.getIdToken();
+      const token = await auth.currentUser.getIdToken();
 
-    const res = await fetch(`${API_URL}/api/pay`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` // ✅ THIS WAS MISSING
-      },
-      body: JSON.stringify({
-        amount: tutorial.price,
-        email: auth.currentUser.email,
-        tutorialId: tutorial.id,
-        tutorId: tutorial.tutorId
-      })
-    });
+      const res = await fetch(`${API_URL}/api/pay`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          amount: tutorial.price,
+          email: auth.currentUser.email,
+          tutorialId: tutorial.id,
+          tutorId: tutorial.tutorId
+        })
+      });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(text);
-      return alert("Request failed");
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("PAY ERROR:", errText);
+        alert("Payment request failed");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data?.data?.link) {
+        alert("Payment link not received");
+        return;
+      }
+
+      window.location.href = data.data.link;
+    } catch (err) {
+      console.error(err);
+      alert("Payment failed");
     }
+  };
 
-    const data = await res.json();
-
-    if (!data.data?.link) {
-      return alert("Payment error");
-    }
-
-    window.location.href = data.data.link;
-  } catch (err) {
-    console.error(err);
-    alert("Payment failed");
+  // ============================
+  // ⏳ LOADING STATE
+  // ============================
+  if (loading) {
+    return (
+      <div className={`p-4 rounded-2xl ${dark ? "bg-[#1e293b]" : "bg-white"}`}>
+        Loading...
+      </div>
+    );
   }
-};
 
   return (
     <div
@@ -81,7 +101,9 @@ export default function TutorialCard({
         dark ? "bg-[#1e293b]" : "bg-white"
       }`}
     >
-      {/* VIDEO / PREVIEW */}
+      {/* ============================ */}
+      {/* 🎥 VIDEO / PREVIEW */}
+      {/* ============================ */}
       <div className="relative">
         <iframe
           src={hasAccess ? tutorial.videoUrl : tutorial.previewUrl}
@@ -100,7 +122,9 @@ export default function TutorialCard({
         )}
       </div>
 
-      {/* CONTENT */}
+      {/* ============================ */}
+      {/* 📄 CONTENT */}
+      {/* ============================ */}
       <div className="p-4">
         <h2 className="font-semibold text-lg mb-1 line-clamp-1">
           {tutorial.title}
@@ -110,7 +134,9 @@ export default function TutorialCard({
           {tutorial.description}
         </p>
 
-        {/* ACTION */}
+        {/* ============================ */}
+        {/* 💰 ACTION */}
+        {/* ============================ */}
         <div className="mt-3">
           {hasAccess ? (
             <span className="text-green-500 text-sm font-medium">
