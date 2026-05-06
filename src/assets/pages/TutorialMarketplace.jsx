@@ -4,7 +4,10 @@ import {
   collection,
   getDocs,
   deleteDoc,
-  doc
+  doc,
+  query,
+  where,
+  onSnapshot
 } from "firebase/firestore";
 
 import TutorialCard from "../components/TutorialCard";
@@ -13,11 +16,11 @@ import { Link } from "react-router-dom";
 
 export default function TutorialMarketplace({ dark }) {
   const [tutorials, setTutorials] = useState([]);
-  const [purchases, setPurchases] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [purchasedIds, setPurchasedIds] = useState([]);
 
   // ============================
   // 📚 FETCH TUTORIALS
@@ -26,6 +29,7 @@ export default function TutorialMarketplace({ dark }) {
     setLoading(true);
 
     const snap = await getDocs(collection(db, "tutorials"));
+
     const data = snap.docs.map(d => ({
       id: d.id,
       ...d.data()
@@ -33,7 +37,7 @@ export default function TutorialMarketplace({ dark }) {
 
     setTutorials(data);
 
-    // ✅ BUILD UNIQUE CATEGORY LIST
+    // ✅ Dynamic categories
     const uniqueCategories = [
       "All",
       ...new Set(
@@ -49,27 +53,45 @@ export default function TutorialMarketplace({ dark }) {
   };
 
   // ============================
-  // 💰 FETCH PURCHASES (OPTIMIZED)
+  // 🔥 REAL-TIME PURCHASE LISTENER
   // ============================
-  const fetchPurchases = async () => {
-    if (!auth.currentUser) return;
-
-    const snap = await getDocs(collection(db, "purchases"));
-
-    const userPurchases = snap.docs
-      .filter(d => d.data().userId === auth.currentUser.uid)
-      .map(d => d.data().tutorialId);
-
-    setPurchases(userPurchases);
-  };
-
   useEffect(() => {
-    fetchTutorials();
-    fetchPurchases();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const q = query(
+      collection(db, "purchases"),
+      where("userId", "==", user.uid)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const ids = snap.docs.map(doc => doc.data().tutorialId);
+      setPurchasedIds(ids);
+    });
+
+    return () => unsub();
   }, []);
 
   // ============================
-  // 🔍 FILTERS (FIXED)
+  // 🔁 HANDLE PAYMENT REDIRECT
+  // ============================
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("status") === "successful") {
+      console.log("✅ Payment successful, waiting for unlock...");
+    }
+  }, []);
+
+  // ============================
+  // 🚀 INITIAL LOAD
+  // ============================
+  useEffect(() => {
+    fetchTutorials();
+  }, []);
+
+  // ============================
+  // 🔍 FILTER
   // ============================
   const filtered = tutorials.filter(t => {
     const matchesCategory =
@@ -98,8 +120,11 @@ export default function TutorialMarketplace({ dark }) {
   };
 
   return (
-    <div className={`${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"} min-h-screen w-full p-6`}>
-
+    <div
+      className={`${
+        dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"
+      } min-h-screen w-full p-6`}
+    >
       {/* HEADER LINK */}
       <Link
         to="/creatordashboard"
@@ -118,13 +143,15 @@ export default function TutorialMarketplace({ dark }) {
         <input
           placeholder="Search tutorials..."
           className={`px-4 py-2 rounded-xl outline-none border ${
-            dark ? "bg-[#1e293b] border-gray-700" : "bg-white border-gray-300"
+            dark
+              ? "bg-[#1e293b] border-gray-700"
+              : "bg-white border-gray-300"
           }`}
           onChange={e => setSearch(e.target.value)}
         />
       </div>
 
-      {/* 🔥 DYNAMIC CATEGORY FILTER */}
+      {/* CATEGORY FILTER */}
       <div className="flex gap-3 mb-6 flex-wrap">
         {categories.map(cat => (
           <button
@@ -145,12 +172,16 @@ export default function TutorialMarketplace({ dark }) {
 
       {/* LOADING */}
       {loading && (
-        <p className="text-center opacity-60">Loading tutorials...</p>
+        <p className="text-center opacity-60">
+          Loading tutorials...
+        </p>
       )}
 
       {/* EMPTY */}
       {!loading && filtered.length === 0 && (
-        <p className="text-center opacity-60">No tutorials found</p>
+        <p className="text-center opacity-60">
+          No tutorials found
+        </p>
       )}
 
       {/* GRID */}
@@ -159,8 +190,8 @@ export default function TutorialMarketplace({ dark }) {
           <TutorialCard
             key={tutorial.id}
             tutorial={tutorial}
+            purchasedIds={purchasedIds}
             dark={dark}
-            purchasedIds={purchases}
             onDelete={handleDelete}
             isOwner={auth.currentUser?.uid === tutorial.tutorId}
           />

@@ -8,25 +8,40 @@ export default defineConfig({
   plugins: [react(),
     tailwindcss(),
     VitePWA({
-  registerType: 'autoUpdate',
-  strategies: 'generateSW',
+  registerType: "autoUpdate",
+  injectRegister: "auto",
+  strategies: "generateSW",
+
+  workbox: {
+    clientsClaim: true,
+    skipWaiting: true,
+
+    // 🔥 optional but helps avoid stale assets
+    cleanupOutdatedCaches: true
+  },
+
+  devOptions: {
+    enabled: true
+  },
 
   manifest: {
-    name: 'UniHelp',
-    short_name: 'UniHelp',
-    start_url: '/',
-    display: 'standalone',
-    theme_color: '#000000',
+    name: "UniHelp",
+    short_name: "UniHelp",
+    start_url: "/dashboard?v=2", // 🔥 version bump trick
+    display: "standalone",
+    theme_color: "#000000",
+    background_color: "#000000",
+
     icons: [
       {
-        src: '/favicon.png',
-        sizes: '192x192',
-        type: 'image/png'
+        src: "/favicon.png",
+        sizes: "192x192",
+        type: "image/png"
       },
       {
-        src: '/favicon.png',
-        sizes: '512x512',
-        type: 'image/png'
+        src: "/favicon.png",
+        sizes: "512x512",
+        type: "image/png"
       }
     ]
   }

@@ -34,6 +34,14 @@ const App = () => {
     useEffect(() => {
       localStorage.setItem("theme", dark);
       }, [dark]);
+
+       useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        window.location.reload();
+      });
+    }
+  }, []);
       
   return (
     <>
