@@ -33,6 +33,9 @@ export default function TutorialCard({
     }
 
     const purchased = purchasedIds.includes(tutorial.id);
+    console.log("Tutorial:", tutorial.id);
+    console.log("Purchased IDs:", purchasedIds);
+    console.log("Purchased:", purchased);
 
     setHasAccess(purchased);
     setLocked(!purchased);

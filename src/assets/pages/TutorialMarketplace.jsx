@@ -66,6 +66,7 @@ export default function TutorialMarketplace({ dark }) {
 
     const unsub = onSnapshot(q, (snap) => {
       const ids = snap.docs.map(doc => doc.data().tutorialId);
+      console.log("PURCHASE IDS:", ids);
       setPurchasedIds(ids);
     });
 
