@@ -25,7 +25,7 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
         <SideBar dark={dark}/>
         <BottomBar dark={dark}/>
         {menuOpen &&
-          <div className={`fixed md:hidden pb-40 py-10 px-5 left-0 top-10 h-screen w-[70%] z-10 flex flex-col ${dark ? 'bg-slate-900' : 'bg-slate-100'}`}>
+          <div className={`fixed md:hidden pb-38 py-10 px-5 left-0 top-10 h-screen w-[70%] z-10 flex flex-col ${dark ? 'bg-slate-900' : 'bg-slate-100'}`}>
              
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/GPA'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CalculatorIcon className=''/> GPA Calculator</NavLink>
 
@@ -51,15 +51,10 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/contact'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <PhoneCall className=''/> Contact Us</NavLink>
 
 
-      <div className="flex flex-col shrink-0 mt-auto">
+      <div onClick={(e)=> setMenuOpen(false)} className="flex flex-col shrink-0 mt-auto">
         <Link to={'/profile'} className="flex overflow-hidden relative items-center">
-          <ProfilePhoto onClick={(e)=> setMenuOpen(false)} user={user}/> <ChevronRight size={23} className={`absolute right-1 rounded-full flex ${dark ? 'bg-slate-900': 'bg-slate-100'} `}/>
-        </Link>
-        
-        <span>
-        <p className="flex mt-6 pl-auto text-red-600 font-medium cursor-pointer" onClick={handleLogout}><LogOut/> Logout</p>
-        </span>
-        
+          <ProfilePhoto  user={user}/> <ChevronRight size={23} className={`absolute right-1 rounded-full flex ${dark ? 'bg-slate-900': 'bg-slate-100'} `}/>
+        </Link>  
       </div>
         </div>
         }
