@@ -571,7 +571,7 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
             dark ? "bg-[#111827]" : "bg-white"
           }`}
         >
-          <label className="flex gap-1.5 h-10 w-10 justify-center items-center bg-indigo-600 rounded text-white cursor-pointer text-sm ">
+          <label className="flex gap-1.5 h-10 w-10 justify-center items-center bg-indigo-600 rounded shrink-0 text-white cursor-pointer text-sm ">
               <Plus size={23}/>
               <input
                 type="file"
@@ -596,7 +596,7 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
 
           <button
             onClick={handleSend}
-            className="bg-indigo-500 flex justify-center items-center h-12 w-12 text-white rounded hover:bg-indigo-600 transition"
+            className="bg-indigo-500 flex justify-center items-center h-12 w-12 text-white rounded shrink-0 hover:bg-indigo-600 transition"
           >
             <Send size={20} />
           </button>
