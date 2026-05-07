@@ -86,7 +86,7 @@ export default function CreatorDashboard({ dark }) {
       <div className="flex-1 p-4 md:p-6 mt-14 md:mt-0">
         {renderTab()}
       </div>
-      <BottomBar/>
+      <BottomBar dark={dark}/>
     </div>
   );
 }

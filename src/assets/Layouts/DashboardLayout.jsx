@@ -149,7 +149,7 @@ const DashboardLayout = ({ dark, menuOpen, setMenuOpen }) => {
 
         {menuOpen && (
           <div
-            className={`fixed md:hidden pb-38 py-10 px-5 left-0 top-10 h-screen w-[75%] z-20 overflow-y-auto no-scrollbar flex flex-col ${
+            className={`fixed md:hidden pb-38 py-10 px-5 left-0 top-10 h-screen w-[85%] z-20 overflow-y-auto no-scrollbar flex flex-col ${
               dark ? "bg-slate-900 text-white" : "bg-slate-100 text-black"
             }`}
           >

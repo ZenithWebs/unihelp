@@ -125,12 +125,6 @@ export default function DashboardHome({ dark }) {
           </p>
         </div>
 
-        <Link
-          to="/withdraw"
-          className="bg-green-600 text-white px-4 py-2 rounded-xl text-sm"
-        >
-          Withdraw
-        </Link>
       </div>
 
       {/* STATS */}

@@ -30,6 +30,9 @@ import TutorWithdrawal from './assets/pages/creator/TutorWithdrawal';
 import Contact from './assets/pages/Contact';
 import Report from './assets/pages/Report';
 import StudentMarketplace from './assets/pages/StudentMarketplace';
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "./firebase/config";
+import { requestNotificationPermission } from "./firebaseMessaging";
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,6 +48,38 @@ const App = () => {
       });
     }
   }, []);
+
+  useEffect(() => {
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  setDoc(
+    doc(db, "users", user.uid),
+    {
+      lastActive: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}, []);
+
+useEffect(() => {
+  const saveToken = async () => {
+    const token = await requestNotificationPermission();
+
+    if (!token || !auth.currentUser) return;
+
+    await setDoc(
+      doc(db, "users", auth.currentUser.uid),
+      {
+        fcmToken: token,
+      },
+      { merge: true }
+    );
+  };
+
+  saveToken();
+}, []);
       
   return (
     <>
