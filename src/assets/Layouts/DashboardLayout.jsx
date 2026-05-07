@@ -1,75 +1,278 @@
-import React, { useState, useContext} from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import SideBar from '../components/SideBar'
-import BottomBar from './../components/BottomBar';
-import { auth, db } from "../../firebase/config";
+import React, { useState, useContext } from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import SideBar from "../components/SideBar";
+import BottomBar from "../components/BottomBar";
+import { auth } from "../../firebase/config";
 import { AuthContext } from "../context/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import ProfilePhoto from '../components/ProfilePhoto'
-import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, FileWarning, HouseIcon, LayoutDashboardIcon, LogOut, NewspaperIcon, NotebookPenIcon, PhoneCall, PlaySquareIcon, Video, VideoIcon } from 'lucide-react';
+import ProfilePhoto from "../components/ProfilePhoto";
 
-const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
+import {
+  Brain,
+  CalculatorIcon,
+  ChartAreaIcon,
+  ChevronDown,
+  ChevronRight,
+  File,
+  FileWarning,
+  GraduationCap,
+  HouseIcon,
+  NewspaperIcon,
+  NotebookPenIcon,
+  PhoneCall,
+  PlaySquareIcon,
+  Video,
+  LogOut,
+  BookOpen,
+  LayoutDashboard,
+  BadgeDollarSign,
+} from "lucide-react";
 
+const DashboardLayout = ({ dark, menuOpen, setMenuOpen }) => {
   const { user } = useContext(AuthContext);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
+
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  const toggleDropdown = (name) => {
+    setOpenDropdown(openDropdown === name ? null : name);
+  };
+
   const handleLogout = async () => {
     await signOut(auth);
-    navigate('/');
+    navigate("/");
   };
+
+  const menuCategories = [
+    {
+      title: "Academic Tools",
+      icon: <GraduationCap size={20} />,
+      links: [
+        {
+          to: "/GPA",
+          label: "GPA Calculator",
+          icon: <CalculatorIcon size={18} />,
+        },
+        {
+          to: "/CGPA",
+          label: "CGPA Tracking",
+          icon: <ChartAreaIcon size={18} />,
+        },
+        {
+          to: "/questions",
+          label: "Past Questions",
+          icon: <File size={18} />,
+        },
+      ],
+    },
+
+    {
+      title: "Learning Resources",
+      icon: <BookOpen size={20} />,
+      links: [
+        {
+          to: "/tutorials",
+          label: "Browse YT Videos",
+          icon: <PlaySquareIcon size={18} />,
+        },
+        {
+          to: "/tutorialmarketplace",
+          label: "Find Tutorials",
+          icon: <Video size={18} />,
+        },
+        {
+          to: "/lecturenotesmarketplace",
+          label: "Lecture Notes",
+          icon: <NotebookPenIcon size={18} />,
+        },
+      ],
+    },
+
+    {
+      title: "Student Marketplace",
+      icon: <LayoutDashboard size={20} />,
+      links: [
+        {
+          to: "/hostelmarketplace",
+          label: "Find Hostel",
+          icon: <HouseIcon size={18} />,
+        },
+        {
+            to: '/studentmarketplace',
+            label: 'Student Marketplace',
+            icon: <BadgeDollarSign size={18}/>
+        },
+      ],
+    },
+
+    {
+      title: "Smart Features",
+      icon: <Brain size={20} />,
+      links: [
+        {
+          to: "/newsfeed",
+          label: "Smart Feeds",
+          icon: <NewspaperIcon size={18} />,
+        },
+        {
+          to: "/ai",
+          label: "AI Assistance",
+          icon: <Brain size={18} />,
+        },
+      ],
+    },
+
+    {
+      title: "Support",
+      icon: <PhoneCall size={20} />,
+      links: [
+        {
+          to: "/report",
+          label: "Report",
+          icon: <FileWarning size={18} />,
+        },
+        {
+          to: "/contact",
+          label: "Contact Us",
+          icon: <PhoneCall size={18} />,
+        },
+      ],
+    },
+  ];
+
   return (
-    <div className='flex gap-0.5'>
+    <div className="flex gap-0.5">
       <div>
-        <SideBar dark={dark}/>
-        <BottomBar dark={dark}/>
-        {menuOpen &&
-          <div className={`fixed md:hidden pb-38 py-10 px-5 left-0 top-10 h-screen w-[70%] z-10 flex flex-col ${dark ? 'bg-slate-900' : 'bg-slate-100'}`}>
-             
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/GPA'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <CalculatorIcon className=''/> GPA Calculator</NavLink>
+        <SideBar dark={dark} />
+        <BottomBar dark={dark} />
 
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/CGPA'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <ChartAreaIcon className=''/> CGPA Tracking</NavLink>
+        {menuOpen && (
+          <div
+            className={`fixed md:hidden pb-38 py-10 px-5 left-0 top-10 h-screen w-[75%] z-20 overflow-y-auto no-scrollbar flex flex-col ${
+              dark ? "bg-slate-900 text-white" : "bg-slate-100 text-black"
+            }`}
+          >
+            {/* MENU CATEGORIES */}
+            <div className="flex flex-col gap-3">
+              {menuCategories.map((category, index) => (
+                <div
+                  key={index}
+                  className={`rounded-xl overflow-hidden ${
+                    dark ? "bg-slate-800" : "bg-white"
+                  }`}
+                >
+                  {/* CATEGORY HEADER */}
+                  <button
+                    onClick={() => toggleDropdown(category.title)}
+                    className={`w-full flex items-center justify-between px-4 py-3 font-semibold ${
+                      dark
+                        ? "hover:bg-slate-700"
+                        : "hover:bg-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {category.icon}
+                      <span>{category.title}</span>
+                    </div>
 
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/questions'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <File className=''/> Past Questions</NavLink>
+                    <ChevronDown
+                      size={18}
+                      className={`transition-all duration-300 ${
+                        openDropdown === category.title
+                          ? "rotate-180"
+                          : ""
+                      }`}
+                    />
+                  </button>
 
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/tutorials'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <PlaySquareIcon className=''/> Browse YT videos </NavLink>
-      
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/lecturenotesmarketplace'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NotebookPenIcon className=''/> Lecture Note</NavLink>
+                  {/* DROPDOWN LINKS */}
+                  <div
+                    className={`transition-all duration-300 overflow-hidden ${
+                      openDropdown === category.title
+                        ? "max-h-125 py-2"
+                        : "max-h-0"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-1 px-2 pb-2">
+                      {category.links.map((link, i) => (
+                        <NavLink
+                          key={i}
+                          to={link.to}
+                          onClick={() => setMenuOpen(false)}
+                          className={({ isActive }) =>
+                            `flex items-center gap-2 p-2.5 rounded-lg text-sm font-medium transition-all ${
+                              isActive
+                                ? dark
+                                  ? "bg-purple-700 text-white"
+                                  : "bg-slate-300 text-black"
+                                : dark
+                                ? "hover:bg-slate-700"
+                                : "hover:bg-slate-200"
+                            }`
+                          }
+                        >
+                          {link.icon}
+                          {link.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/hostelmarketplace'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <HouseIcon className=''/> Find Hostel</NavLink>
+            {/* PROFILE */}
+            <div
+              onClick={() => setMenuOpen(false)}
+              className="flex flex-col shrink-0 mt-auto pt-5"
+            >
+              <Link
+                to={"/profile"}
+                className={`flex items-center relative p-3 rounded-xl ${
+                  dark ? "bg-slate-800" : "bg-white"
+                }`}
+              >
+                <ProfilePhoto user={user} />
 
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/tutorialmarketplace'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Video className=''/>Find Tutorials</NavLink>
+                <ChevronRight
+                  size={22}
+                  className={`absolute right-3 ${
+                    dark ? "text-white" : "text-black"
+                  }`}
+                />
+              </Link>
 
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/newsfeed'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NewspaperIcon className=''/> Smart Feeds</NavLink>
-
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/ai'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI Assistance</NavLink>
-
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/report'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <FileWarning className=''/> Report</NavLink>
-
-
-      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/contact'} className={`NavLink font-medium rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <PhoneCall className=''/> Contact Us</NavLink>
-
-
-      <div onClick={(e)=> setMenuOpen(false)} className="flex flex-col shrink-0 mt-auto">
-        <Link to={'/profile'} className="flex overflow-hidden relative items-center">
-          <ProfilePhoto  user={user}/> <ChevronRight size={23} className={`absolute right-1 rounded-full flex ${dark ? 'bg-slate-900': 'bg-slate-100'} `}/>
-        </Link>  
+              {/* LOGOUT */}
+              <button
+                onClick={handleLogout}
+                className={`mt-3 flex items-center gap-2 p-3 rounded-xl font-medium ${
+                  dark
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-red-500 text-white hover:bg-red-600"
+                }`}
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-        </div>
-        }
-        
 
+      {/* MAIN CONTENT */}
+      <div
+        onClick={() => setMenuOpen(false)}
+        className={`h-screen max-md:mb-25 w-full pt-20 flex overflow-y-auto no-scrollbar ${
+          dark
+            ? "bg-[#0b0f1a] text-white"
+            : "bg-gray-100 text-gray-900"
+        }`}
+      >
+        <Outlet />
       </div>
-      <div onClick={(e)=> setMenuOpen(false)} className={`h-screen max-md:mb-25 w-full pt-20 flex overflow-y-auto no-scrollbar ${
-        dark ? "bg-[#0b0f1a] text-white" : "bg-gray-100 text-gray-900"
-      }`}>
-        
-        <Outlet/>
-      </div>
-      
     </div>
-  )
-}
+  );
+};
 
-export default DashboardLayout
+export default DashboardLayout;

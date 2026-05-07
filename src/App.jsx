@@ -29,6 +29,7 @@ import AdminDashboard from './assets/pages/AdminDashboard';
 import TutorWithdrawal from './assets/pages/creator/TutorWithdrawal';
 import Contact from './assets/pages/Contact';
 import Report from './assets/pages/Report';
+import StudentMarketplace from './assets/pages/StudentMarketplace';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -78,6 +79,8 @@ const App = () => {
             <Route path='/tutorialmarketplace' element={<ProtectedRoute><TutorialMarketplace dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/lecturenotesmarketplace' element={<ProtectedRoute><LectureNotesMarketplace dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/studentmarketplace' element={<ProtectedRoute><StudentMarketplace dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/profile' element={<ProtectedRoute> <Profile dark={dark}/> </ProtectedRoute>}/>
             

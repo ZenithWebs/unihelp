@@ -9,11 +9,16 @@ import {
   serverTimestamp,
   getDocs,
   startAfter,
-  doc, 
+  doc,
   setDoc,
 } from "firebase/firestore";
-import { db, auth } from './../../firebase/config';
-import { School } from 'lucide-react';
+
+import { db, auth } from "./../../firebase/config";
+import { School } from "lucide-react";
+
+/* =========================================================
+   TYPING INDICATOR HOOK
+========================================================= */
 
 export const useTypingIndicator = (roomId) => {
   const typingTimeout = useRef(null);
@@ -21,10 +26,12 @@ export const useTypingIndicator = (roomId) => {
 
   const sendTyping = async (value) => {
     const now = Date.now();
-     if (!value.trim()) return;
 
-    // 🚫 throttle (prevents spam writes)
+    if (!value.trim()) return;
+
+    // Prevent spam writes
     if (now - lastSent.current < 2000) return;
+
     lastSent.current = now;
 
     await setDoc(
@@ -35,8 +42,8 @@ export const useTypingIndicator = (roomId) => {
       }
     );
 
-    // ⏱ auto stop typing after 2.5s
     clearTimeout(typingTimeout.current);
+
     typingTimeout.current = setTimeout(async () => {
       await setDoc(
         doc(db, "typing", roomId, "users", auth.currentUser.uid),
@@ -51,165 +58,240 @@ export const useTypingIndicator = (roomId) => {
   return { sendTyping };
 };
 
+/* =========================================================
+   TYPING LISTENER HOOK
+========================================================= */
+
 export const useTypingListener = (roomId) => {
   const [typingUsers, setTypingUsers] = useState([]);
 
   useEffect(() => {
-    const ref = collection(db, "typing", roomId, "users");
+    const typingRef = collection(db, "typing", roomId, "users");
 
-    const unsub = onSnapshot(ref, (snapshot) => {
-      const active = [];
+    const unsubscribe = onSnapshot(typingRef, (snapshot) => {
+      const activeUsers = [];
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
+      snapshot.forEach((docItem) => {
+        const data = docItem.data();
 
-        // ❗ ignore current user
         if (
           data.isTyping &&
-          doc.id !== auth.currentUser?.uid
+          docItem.id !== auth.currentUser?.uid
         ) {
-          active.push(doc.id);
+          activeUsers.push(docItem.id);
         }
       });
 
-      setTypingUsers(active);
+      setTypingUsers(activeUsers);
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, [roomId]);
 
   return typingUsers;
 };
 
+/* =========================================================
+   MAIN COMMUNITY COMPONENT
+========================================================= */
+
 export default function Community({ dark }) {
+  /* =========================================================
+     STATES
+  ========================================================= */
+
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [lastDoc, setLastDoc] = useState(null);
   const [members, setMembers] = useState([]);
+
   const bottomRef = useRef(null);
 
-  const roomId = "campus-global"; 
+  /* =========================================================
+     ROOM CONFIG
+  ========================================================= */
+
+  const roomId = "campus-global";
+
+  const messagesRef = collection(
+    db,
+    "chats",
+    roomId,
+    "messages"
+  );
+
   const typingUsers = useTypingListener(roomId);
+  const { sendTyping } = useTypingIndicator(roomId);
 
-  const messagesRef = collection(db, "chats", roomId, "messages");
+  /* =========================================================
+     MEMBER LISTENER
+  ========================================================= */
 
-  const getMessageStatus = (msg) => {
-  const others = members.filter(
-    (m) => m.userId !== auth.currentUser.uid
-  );
-
-  if (others.length === 0) return "sent";
-
-  const seenCount = others.filter(
-    (m) =>
-      m.lastSeenAt?.toMillis &&
-      msg.createdAt?.toMillis &&
-      m.lastSeenAt.toMillis() >= msg.createdAt.toMillis()
-  ).length;
-
-  if (seenCount === others.length) return "seen";
-  return "delivered";
-};
-  
-
-useEffect(() => {
-  const ref = collection(db, "rooms", roomId, "members");
-
-  const unsub = onSnapshot(ref, (snap) => {
-    const data = snap.docs.map((doc) => ({
-      userId: doc.id,
-      ...doc.data(),
-    }));
-
-    setMembers(data);
-  });
-
-  return () => unsub();
-}, [roomId]);
-
-  // 🎯 Load cached messages first (FAST UI)
   useEffect(() => {
-  fetchInitialMessages();
+    const membersRef = collection(
+      db,
+      "rooms",
+      roomId,
+      "members"
+    );
 
-  const unsubscribe = setupRealtime();
+    const unsubscribe = onSnapshot(membersRef, (snapshot) => {
+      const membersData = snapshot.docs.map((docItem) => ({
+        userId: docItem.id,
+        ...docItem.data(),
+      }));
 
-  return () => unsubscribe(); // ✅ cleanup
-}, []);
+      setMembers(membersData);
+    });
 
-const markAsSeen = async () => {
-  const userId = auth.currentUser?.uid;
+    return () => unsubscribe();
+  }, [roomId]);
 
-  await setDoc(
-    doc(db, "rooms", roomId, "members", userId),
-    {
-      lastSeenAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
-};
-useEffect(() => {
-  if (messages.length > 0) {
-    markAsSeen();
-  }
-}, [messages]);
+  /* =========================================================
+     MESSAGE STATUS
+  ========================================================= */
 
-  // ⚡ Initial load (ONLY last 30 messages)
-  const fetchInitialMessages = async () => {
-    const q = query(messagesRef, orderBy("createdAt", "desc"), limit(30));
-    const snap = await getDocs(q);
+  const getMessageStatus = (message) => {
+    const others = members.filter(
+      (member) => member.userId !== auth.currentUser?.uid
+    );
 
-    const msgs = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })).reverse();
+    if (others.length === 0) return "sent";
 
-    setMessages(msgs);
-    setLastDoc(snap.docs[snap.docs.length - 1]);
-    setLoading(false);
+    const seenCount = others.filter(
+      (member) =>
+        member.lastSeenAt?.toMillis &&
+        message.createdAt?.toMillis &&
+        member.lastSeenAt.toMillis() >=
+          message.createdAt.toMillis()
+    ).length;
 
-    localStorage.setItem("unihelp_chat_cache", JSON.stringify(msgs));
+    if (seenCount === others.length) return "seen";
+
+    return "delivered";
   };
 
-  // ⚡ REALTIME (ONLY active room → low cost)
-  const setupRealtime = () => {
-  const q = query(messagesRef, orderBy("createdAt", "desc"), limit(20));
+  /* =========================================================
+     MARK AS SEEN
+  ========================================================= */
 
-  return onSnapshot(q, (snapshot) => {
-    const liveMessages = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })).reverse();
+  const markAsSeen = async () => {
+    const userId = auth.currentUser?.uid;
 
-    setMessages(liveMessages);
+    if (!userId) return;
+
+    await setDoc(
+      doc(db, "rooms", roomId, "members", userId),
+      {
+        lastSeenAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      markAsSeen();
+    }
+  }, [messages]);
+
+  /* =========================================================
+     FETCH INITIAL MESSAGES
+  ========================================================= */
+
+  const fetchInitialMessages = async () => {
+    const q = query(
+      messagesRef,
+      orderBy("createdAt", "desc"),
+      limit(30)
+    );
+
+    const snapshot = await getDocs(q);
+
+    const loadedMessages = snapshot.docs
+      .map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
+      }))
+      .reverse();
+
+    setMessages(loadedMessages);
+    setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+    setLoading(false);
 
     localStorage.setItem(
       "campusflow_chat_cache",
-      JSON.stringify(liveMessages)
+      JSON.stringify(loadedMessages)
     );
-  });
-};
-
-  // 📤 Send message (optimized write)
-  const sendMessage = async () => {
-  if (!text.trim()) return;
-
-  const user = auth.currentUser;
-
-  const newMsg = {
-    text,
-    userId: user?.uid || "anon",
-    name: user?.displayName || "Anonymous",
-    avatar: user?.photoURL || null,
-    createdAt: serverTimestamp(),
   };
 
-  await addDoc(messagesRef, newMsg);
+  /* =========================================================
+     REALTIME LISTENER
+  ========================================================= */
 
-  setText("");
-};
+  const setupRealtime = () => {
+    const q = query(
+      messagesRef,
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
 
-  // 📜 Load older messages (pagination = COST SAVING)
+    return onSnapshot(q, (snapshot) => {
+      const liveMessages = snapshot.docs
+        .map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }))
+        .reverse();
+
+      setMessages(liveMessages);
+
+      localStorage.setItem(
+        "campusflow_chat_cache",
+        JSON.stringify(liveMessages)
+      );
+    });
+  };
+
+  /* =========================================================
+     INITIALIZE CHAT
+  ========================================================= */
+
+  useEffect(() => {
+    fetchInitialMessages();
+
+    const unsubscribe = setupRealtime();
+
+    return () => unsubscribe();
+  }, []);
+
+  /* =========================================================
+     SEND MESSAGE
+  ========================================================= */
+
+  const sendMessage = async () => {
+    if (!text.trim()) return;
+
+    const user = auth.currentUser;
+
+    const newMessage = {
+      text,
+      userId: user?.uid || "anonymous",
+      name: user?.displayName || "Anonymous",
+      avatar: user?.photoURL || null,
+      createdAt: serverTimestamp(),
+    };
+
+    await addDoc(messagesRef, newMessage);
+
+    setText("");
+  };
+
+  /* =========================================================
+     LOAD OLDER MESSAGES
+  ========================================================= */
+
   const loadMore = async () => {
     if (!lastDoc) return;
 
@@ -220,41 +302,69 @@ useEffect(() => {
       limit(20)
     );
 
-    const snap = await getDocs(q);
+    const snapshot = await getDocs(q);
 
-    const older = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
+    const olderMessages = snapshot.docs.map((docItem) => ({
+      id: docItem.id,
+      ...docItem.data(),
     }));
 
-    setMessages((prev) => [...older.reverse(), ...prev]);
+    setMessages((prev) => [
+      ...olderMessages.reverse(),
+      ...prev,
+    ]);
 
-    setLastDoc(snap.docs[snap.docs.length - 1]);
+    setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
   };
 
+  /* =========================================================
+     AUTO SCROLL
+  ========================================================= */
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, [messages]);
-  const { sendTyping } = useTypingIndicator(roomId);
+
+  /* =========================================================
+     UI
+  ========================================================= */
 
   return (
     <div
       className={`h-[90%] w-full flex flex-col ${
-        dark ? "bg-[#0b0f19] text-white" : "bg-gray-100 text-black"
+        dark
+          ? "bg-[#0b0f19] text-white"
+          : "bg-gray-100 text-black"
       }`}
     >
-      {/* HEADER */}
+      {/* =========================================================
+         HEADER
+      ========================================================= */}
+
       <div
         className={`p-4 font-bold flex shadow-md ${
           dark ? "bg-[#111827]" : "bg-white"
         }`}
       >
-        <School size={23} className="text-indigo-500"/> UniHelp Chat
+        <School
+          size={23}
+          className="text-indigo-500"
+        />
+        UniHelp Chat
       </div>
 
-      {/* CHAT AREA */}
-      <div className=" h-full relative overflow-y-auto p-3 space-y-2">
-        {loading && <p className="text-sm opacity-60">Loading chat...</p>}
+      {/* =========================================================
+         CHAT AREA
+      ========================================================= */}
+
+      <div className="h-full relative overflow-y-auto p-3 space-y-2">
+        {loading && (
+          <p className="text-sm opacity-60">
+            Loading chat...
+          </p>
+        )}
 
         <button
           onClick={loadMore}
@@ -263,52 +373,78 @@ useEffect(() => {
           Load older messages
         </button>
 
-        {messages.map((msg) => {
-        const isMe = msg.userId === auth.currentUser?.uid;
+        {messages.map((message) => {
+          const isMe =
+            message.userId === auth.currentUser?.uid;
 
-        return (
-          <div className={`flex gap-2 ${isMe ? "justify-end" : "justify-start"}`}>
-            {!isMe && (
-              <img
-                src={msg.avatar || "/default-avatar.png"}
-                className="w-6 h-6 rounded-full mt-1"
-              />
-            )}
-
-          <div className="max-w-[75%]">
-            {!isMe && (
-              <div className="text-[11px] font-semibold opacity-70">
-                {msg.name}
-              </div>
-            )}
-
+          return (
             <div
-              className={`p-2 rounded-lg text-sm ${
+              key={message.id}
+              className={`flex gap-2 ${
                 isMe
-                  ? "bg-blue-600 text-white"
-                  : dark
-                  ? "bg-gray-800"
-                  : "bg-white shadow"
+                  ? "justify-end"
+                  : "justify-start"
               }`}
             >
-              {msg.text}
-            </div>
-          </div>
-        </div>
-                );
-              })}
+              {!isMe && (
+                <img
+                  src={
+                    message.avatar ||
+                    "/default-avatar.png"
+                  }
+                  alt="avatar"
+                  className="w-6 h-6 rounded-full mt-1"
+                />
+              )}
 
-          {typingUsers.length > 0 && (
-            <div className="text-xs italic opacity-70 px-2">
-              {typingUsers.length === 1
-                ? "Typing..."
-                : `${typingUsers.length} people typing...`}
+              <div className="max-w-[75%]">
+                {!isMe && (
+                  <div className="text-[11px] font-semibold opacity-70">
+                    {message.name}
+                  </div>
+                )}
+
+                <div
+                  className={`p-2 rounded-lg text-sm ${
+                    isMe
+                      ? "bg-blue-600 text-white"
+                      : dark
+                      ? "bg-gray-800"
+                      : "bg-white shadow"
+                  }`}
+                >
+                  {message.text}
+                </div>
+
+                {isMe && (
+                  <p className="text-[10px] opacity-60 mt-1 text-right">
+                    {getMessageStatus(message)}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          );
+        })}
+
+        {/* =========================================================
+           TYPING INDICATOR
+        ========================================================= */}
+
+        {typingUsers.length > 0 && (
+          <div className="text-xs italic opacity-70 px-2">
+            {typingUsers.length === 1
+              ? "Typing..."
+              : `${typingUsers.length} people typing...`}
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
-      {/* INPUT */}
+      {/* =========================================================
+         INPUT AREA
+      ========================================================= */}
+
       <div
         className={`p-3 flex gap-2 ${
           dark ? "bg-[#111827]" : "bg-white"
@@ -318,13 +454,15 @@ useEffect(() => {
           value={text}
           onChange={(e) => {
             const value = e.target.value;
+
             setText(value);
             sendTyping(value);
           }}
-          
-          placeholder="Message Unihelp..."
+          placeholder="Message UniHelp..."
           className={`flex-1 p-2 rounded-md outline-none ${
-            dark ? "bg-gray-900 text-white" : "bg-gray-100"
+            dark
+              ? "bg-gray-900 text-white"
+              : "bg-gray-100"
           }`}
         />
 
