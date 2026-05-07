@@ -313,7 +313,7 @@ const summary = calculateSummary();
 
                     <button
                       onClick={() => removeCourse(index)}
-                      className="text-red-500 text-lg font-bold"
+                      className="text-red-500 text-sm font-bold"
                     >
                       <Trash2Icon />
                     </button>

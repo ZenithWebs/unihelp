@@ -278,7 +278,7 @@ export default function LectureNotesMarketplace({ dark }) {
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold">Lecture Notes Marketplace</h1>
+            <h1 className="text-2xl font-bold">Lecture Notes</h1>
             <p className="text-sm opacity-70">
               Upload, discover and download notes from students
             </p>
@@ -303,7 +303,7 @@ export default function LectureNotesMarketplace({ dark }) {
                 {notifications.filter(n => !n.read).length}
               </span>
             )}
-            <div className={`absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg p-3 ${showMessage ? 'flex flex-col' : 'hidden'}`}>
+            <div className={`absolute right-0 mt-2 w-72 ${dark ? 'bg-slate-600' : 'bg-white'}  rounded-xl shadow-lg p-3 ${showMessage ? 'flex flex-col' : 'hidden'}`}>
               {notifications.length === 0 ? (
                 <p className="text-sm">No notifications</p>
               ) : (
@@ -313,7 +313,7 @@ export default function LectureNotesMarketplace({ dark }) {
                     onClick={() => {
                       markAsRead(n.id);
                       setShowMessage(false); }}
-                    className="p-2 border-b text-sm cursor-pointer hover:bg-gray-100">
+                  className={`p-2 border-b text-sm cursor-pointer  ${dark ? "hover:bg-slate-600" : 'hover:bg-slate-100'}`}>
                     {n.message}
                   </div>
                 ))

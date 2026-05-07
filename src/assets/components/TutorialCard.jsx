@@ -6,16 +6,16 @@ export default function TutorialCard({
   dark,
   onDelete,
   isOwner,
-  purchasedIds = []
+  purchasedIds = [],
 }) {
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
 
-  const playerRef = useRef(null);
-  const intervalRef = useRef(null);
+  const playerContainerRef = useRef(null);
   const playerInstance = useRef(null);
+  const previewInterval = useRef(null);
 
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -27,101 +27,157 @@ export default function TutorialCard({
 
     if (!user) {
       setHasAccess(false);
+      setLocked(true);
       setLoading(false);
       return;
     }
 
-    const hasPurchased = purchasedIds.includes(tutorial.id);
+    const purchased = purchasedIds.includes(tutorial.id);
 
-    setHasAccess(hasPurchased);
-    setLocked(!hasPurchased); // 🔥 reset lock properly
+    setHasAccess(purchased);
+    setLocked(!purchased);
+
     setLoading(false);
   }, [tutorial.id, purchasedIds]);
+
+  // ============================
+  // 🎥 GET VIDEO ID
+  // ============================
+  const getVideoId = (url) => {
+    if (!url) return null;
+
+    try {
+      if (url.includes("watch?v=")) {
+        return url.split("watch?v=")[1].split("&")[0];
+      }
+
+      if (url.includes("youtu.be/")) {
+        return url.split("youtu.be/")[1].split("?")[0];
+      }
+
+      if (url.includes("embed/")) {
+        return url.split("embed/")[1].split("?")[0];
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   // ============================
   // 📺 LOAD YOUTUBE API
   // ============================
   useEffect(() => {
-    if (!window.YT) {
+    if (window.YT && window.YT.Player) return;
+
+    const existingScript = document.getElementById("youtube-iframe-api");
+
+    if (!existingScript) {
       const tag = document.createElement("script");
+
+      tag.id = "youtube-iframe-api";
       tag.src = "https://www.youtube.com/iframe_api";
+
       document.body.appendChild(tag);
     }
   }, []);
 
   // ============================
-  // 🎥 EXTRACT VIDEO ID
-  // ============================
-  const getVideoId = (url) => {
-    if (!url) return null;
-
-    if (url.includes("watch?v=")) {
-      return url.split("watch?v=")[1].split("&")[0];
-    }
-
-    if (url.includes("youtu.be/")) {
-      return url.split("youtu.be/")[1].split("?")[0];
-    }
-
-    if (url.includes("embed/")) {
-      return url.split("embed/")[1].split("?")[0];
-    }
-
-    return null;
-  };
-
-  // ============================
-  // 🎬 PLAYER INIT
+  // 🎬 INIT PLAYER
   // ============================
   useEffect(() => {
     if (loading) return;
 
     const videoId = getVideoId(tutorial.videoUrl);
+
     if (!videoId) return;
 
-    const wait = setInterval(() => {
-      if (window.YT && window.YT.Player) {
-        clearInterval(wait);
+    let mounted = true;
 
-        // destroy old player if exists
-        if (playerInstance.current) {
-          playerInstance.current.destroy();
-        }
+    const createPlayer = () => {
+      if (
+        !mounted ||
+        !window.YT ||
+        !window.YT.Player ||
+        !playerContainerRef.current
+      ) {
+        return;
+      }
 
-        const player = new window.YT.Player(playerRef.current, {
-          height: "160",
+      // destroy old player
+      if (playerInstance.current) {
+        playerInstance.current.destroy();
+      }
+
+      playerInstance.current = new window.YT.Player(
+        playerContainerRef.current,
+        {
+          height: "220",
           width: "100%",
           videoId,
+
           playerVars: {
+            autoplay: 0, // ✅ FIXED
             modestbranding: 1,
-            rel: 0
+            rel: 0,
+            controls: 1,
+            playsinline: 1,
           },
+
           events: {
-            onReady: (event) => {
-              if (!hasAccess) {
-                event.target.playVideo();
+            onStateChange: (event) => {
+              // only monitor preview users
+              if (hasAccess) return;
 
-                intervalRef.current = setInterval(() => {
-                  const time = event.target.getCurrentTime();
+              // PLAYING
+              if (event.data === window.YT.PlayerState.PLAYING) {
+                clearInterval(previewInterval.current);
 
-                  if (time >= 30) {
+                previewInterval.current = setInterval(() => {
+                  const currentTime =
+                    event.target.getCurrentTime();
+
+                  // stop after 30 seconds
+                  if (currentTime >= 30) {
                     event.target.pauseVideo();
+
                     setLocked(true);
-                    clearInterval(intervalRef.current);
+
+                    clearInterval(previewInterval.current);
                   }
                 }, 1000);
               }
-            }
-          }
-        });
 
-        playerInstance.current = player;
+              // STOP interval when paused
+              if (
+                event.data === window.YT.PlayerState.PAUSED ||
+                event.data === window.YT.PlayerState.ENDED
+              ) {
+                clearInterval(previewInterval.current);
+              }
+            },
+          },
+        }
+      );
+    };
+
+    // wait for API
+    const waitForYT = setInterval(() => {
+      if (window.YT && window.YT.Player) {
+        clearInterval(waitForYT);
+
+        createPlayer();
       }
     }, 300);
 
     return () => {
-      clearInterval(wait);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      mounted = false;
+
+      clearInterval(waitForYT);
+
+      clearInterval(previewInterval.current);
+
       if (playerInstance.current) {
         playerInstance.current.destroy();
       }
@@ -129,12 +185,12 @@ export default function TutorialCard({
   }, [tutorial.id, hasAccess, loading]);
 
   // ============================
-  // 💳 BUY
+  // 💳 HANDLE PAYMENT
   // ============================
   const handleBuy = async () => {
     try {
       if (!auth.currentUser) {
-        alert("Login first");
+        alert("Please login first");
         return;
       }
 
@@ -144,33 +200,41 @@ export default function TutorialCard({
 
       const res = await fetch(`${API_URL}/api/pay`, {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
+
         body: JSON.stringify({
           amount: tutorial.price,
           email: auth.currentUser.email,
           tutorialId: tutorial.id,
-          tutorId: tutorial.tutorId
-        })
+          tutorId: tutorial.tutorId,
+        }),
       });
 
       if (!res.ok) {
         const errText = await res.text();
+
         console.error(errText);
+
         alert("Payment failed");
+
         setIsPaying(false);
+
         return;
       }
 
       const data = await res.json();
 
-      // redirect to payment
+      // redirect
       window.location.href = data.data.link;
     } catch (err) {
       console.error(err);
+
       alert("Payment failed");
+    } finally {
       setIsPaying(false);
     }
   };
@@ -196,22 +260,31 @@ export default function TutorialCard({
         dark ? "bg-[#1e293b]" : "bg-white"
       }`}
     >
-      {/* 🎥 VIDEO */}
+      {/* ================= VIDEO ================= */}
       <div className="relative">
-        <div ref={playerRef} className="w-full h-50 bg-black" />
+        <div
+          ref={playerContainerRef}
+          className="w-full h-55 bg-black"
+        />
 
-        {/* 🔒 LOCKED AFTER PREVIEW */}
+        {/* 🔒 PREVIEW LOCK */}
         {!hasAccess && locked && (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white text-sm">
-            ⏱ Preview ended
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white px-4 text-center">
+            <p className="text-lg font-semibold">
+              ⏱ Preview Ended
+            </p>
+
+            <p className="text-sm opacity-80 mt-1">
+              Purchase this tutorial to continue watching
+            </p>
 
             <button
               onClick={handleBuy}
               disabled={isPaying}
-              className={`mt-2 px-3 py-1 rounded text-white ${
+              className={`mt-4 px-5 py-2 rounded-xl text-white font-medium transition ${
                 isPaying
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600"
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {isPaying
@@ -224,17 +297,19 @@ export default function TutorialCard({
         {/* 🗑 DELETE */}
         {isOwner && (
           <button
-            onClick={() => onDelete(tutorial.id, tutorial.tutorId)}
-            className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded"
+            onClick={() =>
+              onDelete(tutorial.id, tutorial.tutorId)
+            }
+            className="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg"
           >
             Delete
           </button>
         )}
       </div>
 
-      {/* 📄 CONTENT */}
+      {/* ================= CONTENT ================= */}
       <div className="p-4">
-        <h2 className="font-semibold text-lg mb-1 line-clamp-1">
+        <h2 className="font-semibold text-lg line-clamp-1">
           {tutorial.title}
         </h2>
 
@@ -242,20 +317,20 @@ export default function TutorialCard({
           By {tutorial.tutorName || "Unknown Tutor"}
         </p>
 
-        <p className="text-sm opacity-70 line-clamp-2">
+        <p className="text-sm opacity-70 mt-2 line-clamp-2">
           {tutorial.description}
         </p>
 
-        <div className="mt-3">
+        <div className="mt-4">
           {hasAccess ? (
-            <span className="text-green-500 text-sm font-medium">
+            <div className="text-green-500 font-medium text-sm">
               ✅ Purchased
-            </span>
+            </div>
           ) : (
             <button
               onClick={handleBuy}
               disabled={isPaying}
-              className={`w-full mt-2 py-2 rounded-xl text-white transition ${
+              className={`w-full py-2 rounded-xl text-white font-medium transition ${
                 isPaying
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-blue-600 hover:bg-blue-700"

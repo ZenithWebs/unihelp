@@ -1,254 +1,431 @@
-import React from 'react'
-import { Book, Calculator, Upload, User2 } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
+import {
+  Book,
+  Calculator,
+  Upload,
+  User2,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+
 import { Link, useNavigate } from "react-router-dom";
 import { Images } from "../data/data";
-import { auth, db} from '../../firebase/config';
-import { 
+
+import { auth, db } from "../../firebase/config";
+
+import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
-import { doc, setDoc, getDoc } from "firebase/firestore";
+  signInWithPopup,
+  updateProfile,
+} from "firebase/auth";
 
-const Signup = ({dark}) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('')
-  const [err, setErr] = useState('');
-  const navigate = useNavigate()
-  const [showPassword, setShowPassword] = useState(false)
+import {
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+const Signup = ({ dark }) => {
+  const navigate = useNavigate();
 
   const provider = new GoogleAuthProvider();
 
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [err, setErr] = useState("");
+  const [success, setSuccess] = useState("");
+
   // ================= EMAIL SIGNUP =================
-  const handleSubmit = async ()=>{
-    if(!email || !password || !username ){
-      setErr('All input fields are required');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setErr("");
+    setSuccess("");
+
+    // VALIDATION
+    if (!username || !email || !password) {
+      setErr("All fields are required");
       return;
     }
 
-    if(password.length < 8){
-      setErr('Password is not upto 8 character');
+    if (username.length < 3) {
+      setErr("Username must be at least 3 characters");
       return;
     }
 
-    setIsLoading(true);
-    setErr('');
+    if (password.length < 6) {
+      setErr("Password must be at least 6 characters");
+      return;
+    }
 
     try {
-      const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredentials.user;
+      setIsLoading(true);
 
-      await setDoc(doc(db, "users", user.uid), {
-        username: username,
-        email: email,
-        createdAt: new Date(),
+      // CREATE ACCOUNT
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      const user = userCredential.user;
+
+      // UPDATE FIREBASE AUTH PROFILE
+      await updateProfile(user, {
+        displayName: username,
       });
 
-      navigate('/dashboard');
+      // SAVE USER TO FIRESTORE
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        username: username,
+        email: email,
+        photo: "",
+        provider: "email",
+        createdAt: serverTimestamp(),
+      });
 
-    } catch (err) {
-      console.log(err.message);
-      setErr('Unable to create account');
+      setSuccess("Account created successfully");
+
+      navigate("/dashboard");
+    } catch (error) {
+      console.log(error);
+
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          setErr("Email already exists");
+          break;
+
+        case "auth/invalid-email":
+          setErr("Invalid email address");
+          break;
+
+        case "auth/weak-password":
+          setErr("Password is too weak");
+          break;
+
+        default:
+          setErr("Unable to create account");
+      }
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   // ================= GOOGLE SIGNUP =================
-  const handleGoogleSignup = async ()=>{
-    setErr('');
-    setIsLoading(true);
+  const handleGoogleSignup = async () => {
+    setErr("");
+    setSuccess("");
 
     try {
+      setIsLoading(true);
+
       const result = await signInWithPopup(auth, provider);
+
       const user = result.user;
 
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
+      const userRef = doc(db, "users", user.uid);
 
-      // Only create if new user
-      if (!docSnap.exists()) {
-        await setDoc(doc(db, "users", user.uid), {
-          username: user.displayName,
+      const userSnap = await getDoc(userRef);
+
+      // CREATE USER ONLY IF NEW
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          uid: user.uid,
+          username: user.displayName || "Student",
           email: user.email,
-          photo: user.photo,
-          createdAt: new Date(),
+          photo: user.photoURL || "",
+          provider: "google",
+          createdAt: serverTimestamp(),
         });
       }
 
-      navigate('/dashboard');
+      navigate("/dashboard");
+    } catch (error) {
+      console.log(error);
 
-    } catch (err) {
-      console.log(err.message);
-      setErr('Google signup failed');
+      if (error.code === "auth/popup-closed-by-user") {
+        setErr("Google popup closed");
+      } else {
+        setErr("Google signup failed");
+      }
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
-    <div className={`min-h-screen pt-20 flex transition-all duration-300 ${
-        dark ? "bg-[#0b0f1a] text-white" : "bg-gray-100 text-gray-900"
-      }`} >
-
+    <div
+      className={`min-h-screen pt-20 flex transition-all duration-300 ${
+        dark
+          ? "bg-[#0b0f1a] text-white"
+          : "bg-gray-100 text-gray-900"
+      }`}
+    >
+      {/* ================= LEFT SECTION ================= */}
       <div className="hidden md:flex w-1/2 flex-col justify-between p-10">
-
         <div>
           <h1 className="text-4xl font-bold leading-tight mb-4">
-            Learn. Share. <br />
+            Learn. Share.
+            <br />
             <span className="text-indigo-500">Succeed</span> Together.
           </h1>
 
-          <p className="text-gray-400 mb-6">
-            Access past questions, calculate your CGPA, and collaborate with students across different campuses.
+          <p className="text-gray-400 mb-8">
+            Access past questions, calculate your CGPA, and collaborate with
+            students across different campuses.
           </p>
 
-          <div className="space-y-3">
-
-            <div className="flex gap-1.5 font-bold text-xl">
-              <span className="flex justify-center items-center rounded-lg h-13 w-13 text-white bg-purple-900">
-                <Book/>
-              </span>  
-              <div>
-                Past Questions
-                <p className="font-medium text-sm opacity-70">Access Quality past questions</p>
-              </div>
-            </div>
-
-            <div className="flex gap-1.5 font-bold text-xl">
-              <span className="flex justify-center items-center rounded-lg h-13 w-13 text-white bg-pink-500">
-                <Calculator/> 
-              </span> 
-              <div>
-                CGPA Calculator
-                <p className="font-medium text-sm opacity-70">Calculate and Track your grades</p>
-              </div>
-            </div>
-
-            <div className="flex gap-1.5 font-bold text-xl">
-              <span className="flex justify-center items-center rounded-lg h-13 w-13 text-white bg-green-500">
-                <Upload/>
-              </span> 
-              <div>
-                Upload & Share
-                <p className="font-medium text-sm opacity-70">Share Knowledge, Help Others</p>
-              </div>
-            </div>
-
-            <div className="flex gap-1.5 font-bold text-xl">
-              <span className="flex justify-center items-center rounded-lg h-13 w-13 text-white bg-indigo-500">
-                <User2/> 
+          <div className="space-y-5">
+            {/* FEATURE 1 */}
+            <div className="flex gap-3">
+              <span className="flex justify-center items-center rounded-xl h-14 w-14 text-white bg-purple-700 shrink-0">
+                <Book size={24} />
               </span>
+
               <div>
-                Student Community
-                <p className="font-medium text-sm opacity-70">Connect and learn together.</p>
+                <h3 className="font-bold text-lg">Past Questions</h3>
+
+                <p className="text-sm opacity-70">
+                  Access quality past questions
+                </p>
               </div>
             </div>
 
+            {/* FEATURE 2 */}
+            <div className="flex gap-3">
+              <span className="flex justify-center items-center rounded-xl h-14 w-14 text-white bg-pink-500 shrink-0">
+                <Calculator size={24} />
+              </span>
+
+              <div>
+                <h3 className="font-bold text-lg">CGPA Calculator</h3>
+
+                <p className="text-sm opacity-70">
+                  Calculate and track your grades
+                </p>
+              </div>
+            </div>
+
+            {/* FEATURE 3 */}
+            <div className="flex gap-3">
+              <span className="flex justify-center items-center rounded-xl h-14 w-14 text-white bg-green-500 shrink-0">
+                <Upload size={24} />
+              </span>
+
+              <div>
+                <h3 className="font-bold text-lg">Upload & Share</h3>
+
+                <p className="text-sm opacity-70">
+                  Share knowledge and help others
+                </p>
+              </div>
+            </div>
+
+            {/* FEATURE 4 */}
+            <div className="flex gap-3">
+              <span className="flex justify-center items-center rounded-xl h-14 w-14 text-white bg-indigo-500 shrink-0">
+                <User2 size={24} />
+              </span>
+
+              <div>
+                <h3 className="font-bold text-lg">Student Community</h3>
+
+                <p className="text-sm opacity-70">
+                  Connect and learn together
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
         <p className="text-sm text-gray-500">© 2026 UniHelp.ng</p>
       </div>
 
-      <div className="w-full md:w-1/2 flex items-center justify-center px-6">
+      {/* ================= RIGHT SECTION ================= */}
+      <div className="w-full md:w-1/2 flex items-center justify-center px-6 py-10">
         <div
-          className={`w-full max-w-md p-8 rounded-2xl shadow-lg ${
-            dark ? "bg-[#111827]" : "bg-white"
+          className={`w-full max-w-md p-8 rounded-3xl shadow-xl border ${
+            dark
+              ? "bg-[#111827] border-gray-800"
+              : "bg-white border-gray-200"
           }`}
         >
-          <div className="flex justify-center items-center mb-1">
-            <h2 className="text-2xl font-semibold text-center">Welcome To UniHelp.ng</h2>
+          {/* HEADER */}
+          <div className="flex justify-center mb-2">
+            <h2 className="text-3xl font-bold text-center">
+              Welcome To UniHelp.ng
+            </h2>
           </div>
 
-          <p className="text-gray-400 mb-6 text-center">
+          <p className="text-gray-400 mb-8 text-center">
             Register to continue with us
           </p>
 
-          <p className='font-medium '>Username</p>
-          <input
-            type="text"
-            onChange={(e)=> setUsername(e.target.value)}
-            placeholder="joe smith"
-            className={`w-full p-3 mb-4 rounded-lg outline-none border ${
-              dark
-                ? "bg-gray-800 border-gray-700 text-white"
-                : "bg-gray-100 border-gray-300 text-black"
-            }`}
-          />
+          {/* FORM */}
+          <form onSubmit={handleSubmit}>
+            {/* USERNAME */}
+            <div className="mb-4">
+              <label className="font-medium mb-2 block">
+                Username
+              </label>
 
-          <p className='font-medium '>Email Address</p>
-          <input
-            type="email"
-            onChange={(e)=> setEmail(e.target.value)}
-            placeholder="Email Address"
-            className={`w-full p-3 mb-4 rounded-lg outline-none border ${
-              dark
-                ? "bg-gray-800 border-gray-700 text-white"
-                : "bg-gray-100 border-gray-300 text-black"
-            }`}
-          />
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="John Doe"
+                className={`w-full p-3 rounded-xl outline-none border transition-all ${
+                  dark
+                    ? "bg-gray-800 border-gray-700 text-white focus:border-indigo-500"
+                    : "bg-gray-100 border-gray-300 text-black focus:border-indigo-500"
+                }`}
+              />
+            </div>
 
-          <p className='font-medium '>Create Password</p>
-          <input
-            type={`${showPassword ? 'text' : 'password'}`}
-            onChange={(e)=> setPassword(e.target.value)}
-            placeholder="Password"
-            className={`w-full p-3 mb-4 rounded-lg outline-none border ${
-              dark
-                ? "bg-gray-800 border-gray-700 text-white"
-                : "bg-gray-100 border-gray-300 text-black"
-            }`}
-          />
+            {/* EMAIL */}
+            <div className="mb-4">
+              <label className="font-medium mb-2 block">
+                Email Address
+              </label>
 
-          <div className="flex justify-between items-center mb-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" onClick={()=> setShowPassword(!showPassword)} />
-              Show password
-            </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@gmail.com"
+                className={`w-full p-3 rounded-xl outline-none border transition-all ${
+                  dark
+                    ? "bg-gray-800 border-gray-700 text-white focus:border-indigo-500"
+                    : "bg-gray-100 border-gray-300 text-black focus:border-indigo-500"
+                }`}
+              />
+            </div>
+
+            {/* PASSWORD */}
+            <div className="mb-4">
+              <label className="font-medium mb-2 block">
+                Create Password
+              </label>
+
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className={`w-full p-3 pr-12 rounded-xl outline-none border transition-all ${
+                    dark
+                      ? "bg-gray-800 border-gray-700 text-white focus:border-indigo-500"
+                      : "bg-gray-100 border-gray-300 text-black focus:border-indigo-500"
+                  }`}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* SHOW PASSWORD */}
+            <div className="flex items-center gap-2 mb-5 text-sm">
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={() => setShowPassword(!showPassword)}
+              />
+
+              <span>Show password</span>
+            </div>
+
+            {/* ERROR */}
+            {err && (
+              <div className="bg-red-500/10 border border-red-500 text-red-500 text-sm rounded-lg p-3 mb-4">
+                {err}
+              </div>
+            )}
+
+            {/* SUCCESS */}
+            {success && (
+              <div className="bg-green-500/10 border border-green-500 text-green-500 text-sm rounded-lg p-3 mb-4">
+                {success}
+              </div>
+            )}
+
+            {/* SUBMIT BUTTON */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full py-3 rounded-xl text-white font-semibold mb-5 transition-all ${
+                isLoading
+                  ? "bg-indigo-400 cursor-not-allowed"
+                  : "bg-indigo-500 hover:bg-indigo-600"
+              }`}
+            >
+              {isLoading ? "Creating Account..." : "Register"}
+            </button>
+          </form>
+
+          {/* DIVIDER */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-gray-600"></div>
+
+            <span className="text-sm text-gray-400">or</span>
+
+            <div className="flex-1 h-px bg-gray-600"></div>
           </div>
 
+          {/* GOOGLE BUTTON */}
           <button
-            onClick={handleSubmit}
-            className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg text-white font-semibold mb-4"
+            onClick={handleGoogleSignup}
+            disabled={isLoading}
+            className={`w-full flex justify-center items-center gap-2 border rounded-xl py-3 transition-all ${
+              dark
+                ? "border-gray-700 hover:bg-slate-700"
+                : "border-gray-300 hover:bg-slate-100"
+            } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {isLoading ? 'Creating Account...' : 'Register'}
+            <img
+              src={Images.google_logo}
+              className="w-8 h-8 object-contain"
+              alt="Google"
+            />
+
+            <span>
+              {isLoading ? "Please wait..." : "Continue with Google"}
+            </span>
           </button>
 
-          <span className='text-center text-red-600 text-sm'>{err}</span>
-
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex-1 h-px bg-gray-600"></div>
-            <span className="text-sm text-gray-400">or</span>
-            <div className="flex-1 h-px bg-gray-600"></div>
-          </div>
-
-          <div className="grid gap-3 mb-4">
-            <button 
-              onClick={handleGoogleSignup}
-              disabled={isLoading}
-              className={`flex justify-center items-center cursor-pointer border border-gray-600 rounded-lg py-2 ${
-                dark ? 'hover:bg-slate-600' : 'hover:bg-slate-100'
-              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <img src={Images.google_logo} className="w-14" alt="" />
-              {isLoading ? 'Please wait...' : ' Continue with Google'}
-            </button>
-          </div>
-
-          <p className="text-sm text-center">
+          {/* FOOTER */}
+          <p className="text-sm text-center mt-6">
             Already have an account?{" "}
-            <Link to={'/'} className="text-indigo-500 cursor-pointer">
+            <Link
+              to="/"
+              className="text-indigo-500 hover:text-indigo-400 font-medium"
+            >
               Sign in
             </Link>
           </p>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default Signup;

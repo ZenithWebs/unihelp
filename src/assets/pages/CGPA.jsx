@@ -284,7 +284,7 @@ useEffect(() => {
 
     {/* HEADER */}
     <div className="flex items-center gap-3 mb-3">
-      <div className="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-white">
+      <div className="w-12 h-12 bg-indigo-500 shrink-0 rounded-xl flex items-center justify-center text-white">
         <Calculator size={22} />
       </div>
       <div>
@@ -312,7 +312,7 @@ useEffect(() => {
 
         <button
           onClick={addSemester}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white"
+          className="flex items-center max-md:text-sm gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white"
         >
           <Plus size={16} /> Add Semester
         </button>

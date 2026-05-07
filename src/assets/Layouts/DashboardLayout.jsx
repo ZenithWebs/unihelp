@@ -7,7 +7,7 @@ import { AuthContext } from "../context/AuthContext";
 import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import ProfilePhoto from '../components/ProfilePhoto'
-import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, HouseIcon, LayoutDashboardIcon, LogOut, NewspaperIcon, NotebookPenIcon, PlaySquareIcon, Video, VideoIcon } from 'lucide-react';
+import { Brain, CalculatorIcon, ChartAreaIcon, ChevronRight, CloudUploadIcon, File, FileWarning, HouseIcon, LayoutDashboardIcon, LogOut, NewspaperIcon, NotebookPenIcon, PhoneCall, PlaySquareIcon, Video, VideoIcon } from 'lucide-react';
 
 const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
 
@@ -44,6 +44,12 @@ const DashboardLayout = ({dark, menuOpen, setMenuOpen}) => {
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/newsfeed'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <NewspaperIcon className=''/> Smart Feeds</NavLink>
 
       <NavLink onClick={(e)=> setMenuOpen(false)} to={'/ai'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Brain className=''/> AI Assistance</NavLink>
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/report'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <FileWarning className=''/> Report</NavLink>
+
+
+      <NavLink onClick={(e)=> setMenuOpen(false)} to={'/contact'} className={`NavLink font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <PhoneCall className=''/> Contact Us</NavLink>
+
 
       <div className="flex flex-col shrink-0 mt-auto">
         <Link to={'/profile'} className="flex overflow-hidden relative items-center">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Heart, Gift } from "lucide-react";
 
-export default function DonationPopupSystem() {
+export default function DonationPopupSystem({dark}) {
   const [isOpen, setIsOpen] = useState(false);
   const [hasShownOnce, setHasShownOnce] = useState(false);
 
@@ -32,11 +32,11 @@ export default function DonationPopupSystem() {
       {/* Popup Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 relative">
+          <div className={`w-full max-w-sm  rounded-2xl shadow-xl p-6 relative ${dark ? 'bg-slate-700' : 'bg-white'}`}>
             {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-2 right-3 text-gray-500 hover:text-black"
+              className="absolute top-2 right-3 text-slate-500 hover:text-black"
             >
               ✕
             </button>
@@ -48,7 +48,7 @@ export default function DonationPopupSystem() {
             </div>
 
             {/* Description */}
-            <p className="text-sm text-gray-600 mb-5">
+            <p className={`text-sm ${dark ? 'text-slate-200' : 'text-gray-600'}  mb-5`}>
               Help us keep UniHelp running and improve learning tools for students.
             </p>
 

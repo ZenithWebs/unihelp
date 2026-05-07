@@ -27,6 +27,8 @@ import CreatorDashboard from './assets/pages/creator/CreatorDashboard';
 import { Database } from 'lucide-react';
 import AdminDashboard from './assets/pages/AdminDashboard';
 import TutorWithdrawal from './assets/pages/creator/TutorWithdrawal';
+import Contact from './assets/pages/Contact';
+import Report from './assets/pages/Report';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -90,6 +92,10 @@ const App = () => {
             <Route path='/questions' element={<ProtectedRoute> <Question dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/community' element={<ProtectedRoute> <Community dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/contact' element={<ProtectedRoute> <Contact dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/report' element={<ProtectedRoute> <Report dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='*' element={ <div className='flex flex-col justify-center items-center bg-inherit fixed top-0 left-0 h-screen w-full'><h1 className='font-black text-6xl text-center'>404 </h1> <p className='font-bold'>Page not found</p> <Link to={'/dashboard'} className='bg-indigo-500 flex text-white p-2.5 rounded'>Dashboard</Link> </div> } />
           </Route>

@@ -186,7 +186,7 @@ const Dashboard = ({dark}) => {
         ))}
       </div>
     </div>
-    <DonationPopupSystem/>
+    <DonationPopupSystem dark={dark}/>
     <pre className='max-md:hidden'>
 
 

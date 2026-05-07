@@ -567,7 +567,7 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
           
 
         <div
-          className={`p-3 rounded-xl flex items-center gap-2 ${
+          className={`p-3 rounded-xl flex w-full items-center gap-2 ${
             dark ? "bg-[#111827]" : "bg-white"
           }`}
         >
@@ -586,7 +586,7 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
             placeholder="Ask something..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className={`flex-1 p-3 rounded border ${
+            className={`flex p-3 rounded border ${
               dark
                 ? "bg-gray-800 border-gray-700 text-white"
                 : "bg-gray-100 border-gray-300"
