@@ -80,6 +80,7 @@ export default function TutorialMarketplace({ dark }) {
 
     if (params.get("status") === "successful") {
       console.log("✅ Payment successful, waiting for unlock...");
+      window.location.reload();
     }
   }, []);
 

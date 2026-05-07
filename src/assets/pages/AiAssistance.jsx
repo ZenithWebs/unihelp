@@ -263,8 +263,16 @@ if (tokens < COST_PER_MESSAGE) {
   return;
 }
 
-const freshSnap = await getDoc(ref);
-const freshBalance = freshSnap.data()?.balance || 0;
+const tokenRef = doc(
+  db,
+  "userTokens",
+  auth.currentUser.uid
+);
+
+const freshSnap = await getDoc(tokenRef);
+
+const freshBalance =
+  freshSnap.data()?.balance || 0;
 
 if (freshBalance < COST_PER_MESSAGE) {
   setShowUpgrade(true);
@@ -405,11 +413,46 @@ const handlePayment = useFlutterwave(flutterwaveConfig);
   console.log("Opening payment...");
 
   handlePayment({
-    callback: (response) => {
-      console.log(response);
-      closePaymentModal();
-      alert("Payment processing...");
-    },
+    callback: async (response) => {
+  try {
+    closePaymentModal();
+
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    const res = await fetch(
+      `${API_URL}/api/ai/verify-payment`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          transaction_id: response.transaction_id,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert("Payment verification failed");
+      return;
+    }
+
+    await loadTokens();
+
+    alert("✅ Tokens added successfully");
+
+    setShowUpgrade(false);
+
+  } catch (err) {
+    console.log(err);
+
+    alert("Payment verification failed");
+  }
+},
     onClose: () => {
       console.log("Payment closed");
     },

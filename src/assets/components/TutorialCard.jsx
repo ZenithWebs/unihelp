@@ -211,7 +211,8 @@ export default function TutorialCard({
           email: auth.currentUser.email,
           tutorialId: tutorial.id,
           tutorId: tutorial.tutorId,
-        }),
+          userId: auth.currentUser.uid, // ✅ ADD THIS
+        })
       });
 
       if (!res.ok) {
