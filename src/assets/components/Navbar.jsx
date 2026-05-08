@@ -11,7 +11,7 @@ const Navbar = ({ dark, setDark, setMenuOpen, menuOpen }) => {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b ${
+      className={`fixed top-0 left-0 w-full z-500 transition-all duration-300 border-b ${
         dark
           ? "bg-slate-950 text-white border-slate-800"
           : "bg-white text-slate-900 border-slate-200"
@@ -43,15 +43,6 @@ const Navbar = ({ dark, setDark, setMenuOpen, menuOpen }) => {
           >
             {dark ? <SunIcon size={20} /> : <MoonIcon size={20} />}
           </button>
-
-          {/* User Avatar (optional if user exists) */}
-          {user && (
-            <div className="hidden md:flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
-                {user?.name?.charAt(0) || "U"}
-              </div>
-            </div>
-          )}
 
           {/* Mobile Menu Toggle */}
           <button

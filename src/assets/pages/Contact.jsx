@@ -65,7 +65,7 @@ export default function Contact({ dark }) {
 
   return (
     <div
-      className={`min-h-screen px-6 py-24 transition-all duration-300 ${
+      className={`min-h-screen px-6 pb-24 transition-all duration-300 ${
         dark
           ? "bg-[#0b1120] text-white"
           : "bg-gray-100 text-gray-900"

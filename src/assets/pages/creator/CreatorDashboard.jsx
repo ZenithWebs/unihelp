@@ -4,7 +4,6 @@ import MyTutorials from "./MyTutorials";
 import UploadTutorial from "./UploadTutorial";
 import { ActivitySquare, ChartBar, ChartBarBig, DollarSign, GraduationCap, GraduationCapIcon, Plus, PlusIcon } from "lucide-react";
 import TutorWithdrawal from "./TutorWithdrawal";
-import BottomBar from "../../components/BottomBar";
 
 export default function CreatorDashboard({ dark }) {
   const [tab, setTab] = useState("dashboard");
@@ -86,7 +85,6 @@ export default function CreatorDashboard({ dark }) {
       <div className="flex-1 p-4 md:p-6 mt-14 md:mt-0">
         {renderTab()}
       </div>
-      <BottomBar dark={dark}/>
     </div>
   );
 }

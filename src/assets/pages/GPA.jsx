@@ -730,7 +730,7 @@ const GPA = ({ dark }) => {
             <div className="text-center">
 
               {/* GPA CIRCLE */}
-              <div className="w-40 h-40 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl">
+              <div className="w-40 h-40 mx-auto rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl">
 
                 <div className="w-32 h-32 rounded-full bg-white text-indigo-600 flex items-center justify-center text-5xl font-black">
                   {gpaValue}
