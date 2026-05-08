@@ -81,9 +81,16 @@ export default function TutorialMarketplace({ dark }) {
 
     if (params.get("status") === "successful") {
       console.log("✅ Payment successful, waiting for unlock...");
-      window.location.reload();
     }
   }, []);
+  
+  useEffect(() => {
+  const interval = setInterval(() => {
+    fetchPurchases();
+  }, 3000);
+
+  return () => clearInterval(interval);
+}, []);
 
   // ============================
   // 🚀 INITIAL LOAD
@@ -91,6 +98,7 @@ export default function TutorialMarketplace({ dark }) {
   useEffect(() => {
     fetchTutorials();
   }, []);
+
 
   // ============================
   // 🔍 FILTER
