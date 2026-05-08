@@ -8,7 +8,7 @@ const Question = ({dark}) => {
     <div className='relative w-full p-5'>
       <h1 className='font-bold text-2xl'>Download Questions</h1>
       <PastQuestions dark={dark}/>
-      <Link className='absolute p-2.5 bg-indigo-500 rounded-full text-white right-4 bottom-20' to={'/uploadquestion'}><PlusCircleIcon size={25}/></Link>
+      <Link className='fixed cursor-pointer p-2.5 bg-indigo-500 rounded-full text-white right-4 bottom-20' to={'/uploadquestion'}><PlusCircleIcon size={30}/></Link>
     </div>
   )
 }

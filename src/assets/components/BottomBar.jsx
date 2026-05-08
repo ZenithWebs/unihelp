@@ -1,20 +1,137 @@
-import React from 'react'
-import { Brain, CalculatorIcon, CloudUploadIcon, File, GroupIcon, HomeIcon, LayoutDashboardIcon, MessageCircle, NewspaperIcon, SparkleIcon, User, Video, WandSparklesIcon } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import React from "react";
 
-const BottomBar = ({dark}) => {
+import {
+  HomeIcon,
+  MessageCircle,
+  Video,
+  WandSparklesIcon,
+} from "lucide-react";
+
+import { NavLink } from "react-router-dom";
+
+const BottomBar = ({ dark }) => {
+  const navItems = [
+    {
+      name: "Home",
+      icon: HomeIcon,
+      path: "/dashboard",
+    },
+
+    {
+      name: "Community",
+      icon: MessageCircle,
+      path: "/community",
+    },
+
+    {
+      name: "Tutorials",
+      icon: Video,
+      path: "/tutorialmarketplace",
+    },
+
+    {
+      name: "AI Help",
+      icon: WandSparklesIcon,
+      path: "/ai",
+    },
+  ];
+
   return (
-    <div className={`flex z-20 justify-between items-center fixed bottom-0 rounded-t-3xl left-0 gap-0.5 w-full md:hidden py-3 px-6 ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100 text-black' }`}>
-      
-      <NavLink to={'/dashboard'} className={`NavLink font-bold text-[12px] rounded flex flex-col justify-center items-center gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <HomeIcon className=''/> Home</NavLink>
+    <>
+      {/* =========================================================
+         SAFE SPACING FOR MOBILE
+      ========================================================= */}
 
-      <NavLink to={'/community'} className={`NavLink text-[12px] justify-center items-center flex-col font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <MessageCircle className=''/> Community</NavLink>
+      <div className="h-24 md:hidden" />
 
-      <NavLink to={'/tutorialmarketplace'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <Video className=''/> Tutorials</NavLink>
+      {/* =========================================================
+         BOTTOM NAVIGATION
+      ========================================================= */}
 
-      <NavLink to={'/ai'} className={`NavLink flex-col text-[12px] justify-center items-center font-bold rounded flex gap-1.5 p-2.5 ${dark ? 'hover:bg-[#601b9b]' : 'hover:bg-slate-300'}`}> <WandSparklesIcon className=''/> Assistance</NavLink>
-    </div>
-  )
-}
+      <div
+        className={`md:hidden fixed bottom-0 left-0 w-full z-50 px-3 pb-3`}
+      >
+        <div
+          className={`relative overflow-hidden rounded-[28px] border shadow-2xl backdrop-blur-2xl ${
+            dark
+              ? "bg-[#0f172acc] border-white/10"
+              : "bg-white/90 border-gray-200"
+          }`}
+        >
+          {/* BACKGROUND GLOW */}
 
-export default BottomBar
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-pink-500/10 pointer-events-none" />
+
+          {/* NAV ITEMS */}
+
+          <div className="relative flex items-center justify-between px-2 py-2">
+            {navItems.map((item, index) => {
+              const Icon = item.icon;
+
+              return (
+                <NavLink
+                  key={index}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `
+                    group relative flex flex-col items-center justify-center
+                    min-w-[70px]
+                    py-2 px-3 rounded-2xl
+                    transition-all duration-300
+                    active:scale-95
+
+                    ${
+                      isActive
+                        ? dark
+                          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20"
+                          : "bg-indigo-500 text-white shadow-lg shadow-indigo-200"
+                        : dark
+                        ? "text-slate-300 hover:bg-white/5"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }
+                  `
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {/* ACTIVE INDICATOR */}
+
+                      {isActive && (
+                        <span className="absolute -top-1 w-8 h-1 rounded-full bg-white/90" />
+                      )}
+
+                      {/* ICON */}
+
+                      <Icon
+                        size={20}
+                        className={`transition-all duration-300 ${
+                          isActive
+                            ? "scale-110"
+                            : "group-hover:scale-105"
+                        }`}
+                      />
+
+                      {/* LABEL */}
+
+                      <span
+                        className={`mt-1 text-[11px] font-semibold tracking-wide ${
+                          isActive
+                            ? "opacity-100"
+                            : "opacity-80"
+                        }`}
+                      >
+                        {item.name}
+                      </span>
+                    </>
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default BottomBar;

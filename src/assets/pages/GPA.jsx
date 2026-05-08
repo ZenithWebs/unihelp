@@ -33,19 +33,19 @@ import { useNavigate } from "react-router-dom";
 const GPA = ({ dark }) => {
   const navigate = useNavigate();
 
-  const [courses, setCourses] = useState([
-    {
-      title: "",
-      code: "",
-      unit: "",
-      grade: "A",
-    },
-  ]);
+  const emptyCourse = {
+    title: "",
+    code: "",
+    unit: "",
+    grade: "A",
+  };
+
+  const [courses, setCourses] = useState([emptyCourse]);
 
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [result, setResult] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
   const [rating, setRating] = useState("");
 
   const [isSaving, setIsSaving] = useState(false);
@@ -65,15 +65,7 @@ const GPA = ({ dark }) => {
   /* ---------------------------------- */
 
   const addCourse = () => {
-    setCourses([
-      ...courses,
-      {
-        title: "",
-        code: "",
-        unit: "",
-        grade: "A",
-      },
-    ]);
+    setCourses([...courses, emptyCourse]);
   };
 
   /* ---------------------------------- */
@@ -83,18 +75,7 @@ const GPA = ({ dark }) => {
   const removeCourse = (index) => {
     const updated = courses.filter((_, i) => i !== index);
 
-    setCourses(
-      updated.length
-        ? updated
-        : [
-            {
-              title: "",
-              code: "",
-              unit: "",
-              grade: "A",
-            },
-          ]
-    );
+    setCourses(updated.length ? updated : [emptyCourse]);
   };
 
   /* ---------------------------------- */
@@ -115,7 +96,7 @@ const GPA = ({ dark }) => {
   };
 
   /* ---------------------------------- */
-  /* GPA CALCULATION */
+  /* GPA */
   /* ---------------------------------- */
 
   const calculateGPA = () => {
@@ -127,7 +108,7 @@ const GPA = ({ dark }) => {
         totalPoints +=
           course.unit * gradeMap[course.grade];
 
-        totalUnits += course.unit;
+        totalUnits += Number(course.unit);
       }
     });
 
@@ -157,7 +138,7 @@ const GPA = ({ dark }) => {
       setRating("⚠️ Probation");
     }
 
-    setResult(true);
+    setShowPopup(true);
   };
 
   /* ---------------------------------- */
@@ -172,7 +153,7 @@ const GPA = ({ dark }) => {
     courses.forEach((course) => {
       if (course.unit > 0) {
         totalCourses += 1;
-        totalUnits += course.unit;
+        totalUnits += Number(course.unit);
 
         totalPoints +=
           course.unit * gradeMap[course.grade];
@@ -220,7 +201,7 @@ const GPA = ({ dark }) => {
   };
 
   /* ---------------------------------- */
-  /* FETCH RECORDS */
+  /* FETCH */
   /* ---------------------------------- */
 
   const fetchResults = async (currentUser) => {
@@ -287,73 +268,73 @@ const GPA = ({ dark }) => {
   /* ---------------------------------- */
 
   const handleClearAll = () => {
-    setCourses([
-      {
-        title: "",
-        code: "",
-        unit: "",
-        grade: "A",
-      },
-    ]);
+    setCourses([emptyCourse]);
 
-    setResult(false);
+    setShowPopup(false);
     setMsg("");
     setRating("");
   };
 
   /* ---------------------------------- */
-  /* UI */
+  /* STYLES */
   /* ---------------------------------- */
 
   const bg = dark
-    ? "bg-[#0b0f1a] text-white"
-    : "bg-[#f6f8fc] text-gray-900";
+    ? "bg-[#0b1120] text-white"
+    : "bg-[#f4f7ff] text-gray-900";
 
   const card = dark
     ? "bg-[#111827] border border-white/10"
     : "bg-white border border-gray-200 shadow-sm";
 
-  return (
-    <div className={`min-h-screen px-4 py-6 ${bg}`}>
-      <div className="max-w-7xl mx-auto">
+  const inputClass = `w-full p-3 rounded-xl border outline-none transition text-sm md:text-base ${
+    dark
+      ? "bg-gray-900 border-gray-700 focus:border-indigo-500"
+      : "bg-gray-50 border-gray-300 focus:border-indigo-500"
+  }`;
 
-        {/* MOBILE BUTTON */}
+  return (
+    <div className={`min-h-screen ${bg}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+        {/* MOBILE CGPA BUTTON */}
         <button
           onClick={() => navigate("/cgpa")}
-          className="md:hidden mb-5 flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white"
+          className="md:hidden mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold"
         >
           <LucideCalculator size={18} />
           CGPA Tracker
         </button>
 
         {/* HEADER */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
-            <Calculator size={26} />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
+
+          <div className="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center shadow-lg text-white">
+            <Calculator size={30} />
           </div>
 
           <div>
-            <h1 className="text-3xl font-black">
+            <h1 className="text-3xl md:text-4xl font-black">
               GPA Calculator
             </h1>
 
-            <p className="opacity-70 text-sm">
+            <p className="opacity-70 mt-1 text-sm md:text-base">
               Calculate, analyze and save your GPA
             </p>
           </div>
         </div>
 
-        {/* TOP GRID */}
-        <div className="grid lg:grid-cols-3 gap-5">
+        {/* MAIN GRID */}
+        <div className="grid xl:grid-cols-3 gap-6">
 
           {/* LEFT */}
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-2">
 
-            {/* COURSE CARD */}
-            <div className={`${card} rounded-3xl p-5`}>
+            <div className={`${card} rounded-3xl p-4 md:p-6`}>
 
               {/* TOP */}
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+
                 <div>
                   <h2 className="font-bold text-xl flex items-center gap-2">
                     <BookOpen size={20} />
@@ -367,131 +348,139 @@ const GPA = ({ dark }) => {
 
                 <button
                   onClick={addCourse}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition"
+                  className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition"
                 >
                   <Plus size={18} />
                   Add Course
                 </button>
               </div>
 
-              {/* HEADINGS */}
-              <div className="grid grid-cols-12 gap-3 mb-3 text-sm font-semibold opacity-60">
-                <p className="col-span-4">Course Title</p>
-                <p className="col-span-3">Code</p>
-                <p className="col-span-2">Unit</p>
-                <p className="col-span-3">Grade</p>
-              </div>
-
               {/* COURSES */}
               <div className="space-y-4">
+
                 {courses.map((course, index) => (
                   <div
                     key={index}
-                    className="grid grid-cols-12 gap-3 items-center"
+                    className={`rounded-2xl p-4 border ${
+                      dark
+                        ? "border-white/10 bg-black/20"
+                        : "border-gray-200 bg-gray-50"
+                    }`}
                   >
 
-                    {/* TITLE */}
-                    <input
-                      type="text"
-                      placeholder="Mathematics"
-                      value={course.title}
-                      onChange={(e) =>
-                        updateCourse(
-                          index,
-                          "title",
-                          e.target.value
-                        )
-                      }
-                      className={`col-span-4 p-3 rounded-xl border outline-none ${
-                        dark
-                          ? "bg-gray-900 border-gray-700"
-                          : "bg-gray-50 border-gray-300"
-                      }`}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
 
-                    {/* CODE */}
-                    <input
-                      type="text"
-                      placeholder="MTH101"
-                      value={course.code}
-                      onChange={(e) =>
-                        updateCourse(
-                          index,
-                          "code",
-                          e.target.value
-                        )
-                      }
-                      className={`col-span-3 p-3 rounded-xl border outline-none ${
-                        dark
-                          ? "bg-gray-900 border-gray-700"
-                          : "bg-gray-50 border-gray-300"
-                      }`}
-                    />
+                      {/* TITLE */}
+                      <div className="md:col-span-4">
+                        <label className="text-xs opacity-60 mb-1 block">
+                          Course Title
+                        </label>
 
-                    {/* UNIT */}
-                    <input
-                      type="number"
-                      placeholder="3"
-                      value={course.unit}
-                      onChange={(e) =>
-                        updateCourse(
-                          index,
-                          "unit",
-                          e.target.value
-                        )
-                      }
-                      className={`col-span-2 p-3 rounded-xl border outline-none ${
-                        dark
-                          ? "bg-gray-900 border-gray-700"
-                          : "bg-gray-50 border-gray-300"
-                      }`}
-                    />
+                        <input
+                          type="text"
+                          placeholder="Mathematics"
+                          value={course.title}
+                          onChange={(e) =>
+                            updateCourse(
+                              index,
+                              "title",
+                              e.target.value
+                            )
+                          }
+                          className={inputClass}
+                        />
+                      </div>
 
-                    {/* GRADE */}
-                    <div className="col-span-3 flex gap-2 items-center">
+                      {/* CODE */}
+                      <div className="md:col-span-3">
+                        <label className="text-xs opacity-60 mb-1 block">
+                          Course Code
+                        </label>
 
-                      <select
-                        value={course.grade}
-                        onChange={(e) =>
-                          updateCourse(
-                            index,
-                            "grade",
-                            e.target.value
-                          )
-                        }
-                        className={`flex-1 p-3 rounded-xl border outline-none ${
-                          dark
-                            ? "bg-gray-900 border-gray-700"
-                            : "bg-gray-50 border-gray-300"
-                        }`}
-                      >
-                        <option>A</option>
-                        <option>B</option>
-                        <option>C</option>
-                        <option>D</option>
-                        <option>E</option>
-                        <option>F</option>
-                      </select>
+                        <input
+                          type="text"
+                          placeholder="MTH101"
+                          value={course.code}
+                          onChange={(e) =>
+                            updateCourse(
+                              index,
+                              "code",
+                              e.target.value
+                            )
+                          }
+                          className={inputClass}
+                        />
+                      </div>
 
-                      <button
-                        onClick={() =>
-                          removeCourse(index)
-                        }
-                        className="text-red-500 hover:scale-110 transition"
-                      >
-                        <Trash2Icon size={20} />
-                      </button>
+                      {/* UNIT */}
+                      <div className="md:col-span-2">
+                        <label className="text-xs opacity-60 mb-1 block">
+                          Unit
+                        </label>
+
+                        <input
+                          type="number"
+                          placeholder="3"
+                          value={course.unit}
+                          onChange={(e) =>
+                            updateCourse(
+                              index,
+                              "unit",
+                              e.target.value
+                            )
+                          }
+                          className={inputClass}
+                        />
+                      </div>
+
+                      {/* GRADE */}
+                      <div className="md:col-span-3">
+                        <label className="text-xs opacity-60 mb-1 block">
+                          Grade
+                        </label>
+
+                        <div className="flex gap-2">
+
+                          <select
+                            value={course.grade}
+                            onChange={(e) =>
+                              updateCourse(
+                                index,
+                                "grade",
+                                e.target.value
+                              )
+                            }
+                            className={inputClass}
+                          >
+                            <option>A</option>
+                            <option>B</option>
+                            <option>C</option>
+                            <option>D</option>
+                            <option>E</option>
+                            <option>F</option>
+                          </select>
+
+                          <button
+                            onClick={() =>
+                              removeCourse(index)
+                            }
+                            className="w-12 rounded-xl bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition"
+                          >
+                            <Trash2Icon size={18} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* ACTIONS */}
-              <div className="flex flex-wrap gap-3 mt-8">
+              <div className="flex flex-col sm:flex-row gap-3 mt-8">
 
                 <button
                   onClick={handleResult}
-                  className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-2"
+                  className="flex-1 px-6 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center justify-center gap-2 transition"
                 >
                   <Calculator size={18} />
                   Calculate GPA
@@ -499,15 +488,15 @@ const GPA = ({ dark }) => {
 
                 <button
                   onClick={handleClearAll}
-                  className="px-6 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold"
+                  className="flex-1 px-6 py-4 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold transition"
                 >
                   Clear All
                 </button>
               </div>
 
-              {/* INFO */}
+              {/* FORMULA */}
               <div
-                className={`mt-8 rounded-2xl p-4 flex gap-3 ${
+                className={`mt-8 rounded-2xl p-5 flex gap-3 ${
                   dark
                     ? "bg-yellow-500/10 border border-yellow-500/20"
                     : "bg-yellow-50 border border-yellow-200"
@@ -516,16 +505,16 @@ const GPA = ({ dark }) => {
                 <LucideLightbulb className="text-yellow-500 shrink-0" />
 
                 <div>
-                  <h3 className="font-bold">
+                  <h3 className="font-bold mb-1">
                     GPA Formula
                   </h3>
 
-                  <p className="text-sm opacity-70 mt-1">
+                  <p className="text-sm opacity-70">
                     GPA = Total Grade Points ÷ Total
                     Units
                   </p>
 
-                  <p className="text-sm opacity-70">
+                  <p className="text-sm opacity-70 mt-1">
                     A=5, B=4, C=3, D=2, E=1, F=0
                   </p>
                 </div>
@@ -536,98 +525,50 @@ const GPA = ({ dark }) => {
           {/* RIGHT */}
           <div className="space-y-5">
 
-            {/* RESULT */}
-            {result && (
-              <div className={`${card} rounded-3xl p-6 relative`}>
-
-                <button
-                  onClick={() => setResult(false)}
-                  className="absolute top-4 right-4 md:hidden"
-                >
-                  <X />
-                </button>
-
-                <div className="text-center">
-
-                  <div className="w-36 h-36 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 mx-auto flex items-center justify-center text-white text-5xl font-black shadow-xl">
-                    {gpaValue}
-                  </div>
-
-                  <h2 className="text-xl font-bold mt-5">
-                    Your GPA
-                  </h2>
-
-                  <p className="opacity-70 text-sm">
-                    Academic performance result
-                  </p>
-
-                  <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-500">
-                    <Trophy size={18} />
-                    {rating}
-                  </div>
-
-                  <button
-                    onClick={handleSave}
-                    className="w-full mt-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold flex items-center justify-center gap-2"
-                  >
-                    <SaveIcon size={18} />
-
-                    {isSaving
-                      ? "Saving..."
-                      : "Save Result"}
-                  </button>
-
-                  <p className="text-sm mt-3 opacity-70">
-                    {msg}
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* SUMMARY */}
             <div className={`${card} rounded-3xl p-6`}>
 
-              <h2 className="font-bold text-lg flex items-center gap-2 mb-5">
-                <BarChart3 size={18} />
+              <h2 className="font-bold text-xl flex items-center gap-2 mb-6">
+                <BarChart3 size={20} />
                 Summary
               </h2>
 
-              <div className="space-y-4">
+              <div className="space-y-5">
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <p className="opacity-70">
                     Total Courses
                   </p>
 
-                  <h3 className="font-bold text-xl">
+                  <h3 className="font-black text-2xl">
                     {summary.totalCourses}
                   </h3>
                 </div>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <p className="opacity-70">
                     Total Units
                   </p>
 
-                  <h3 className="font-bold text-xl">
+                  <h3 className="font-black text-2xl">
                     {summary.totalUnits}
                   </h3>
                 </div>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <p className="opacity-70">
                     Grade Points
                   </p>
 
-                  <h3 className="font-bold text-xl">
+                  <h3 className="font-black text-2xl">
                     {summary.totalPoints}
                   </h3>
                 </div>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <p className="opacity-70">GPA</p>
 
-                  <h3 className="font-black text-2xl text-indigo-500">
+                  <h3 className="font-black text-3xl text-indigo-500">
                     {gpaValue}
                   </h3>
                 </div>
@@ -636,19 +577,19 @@ const GPA = ({ dark }) => {
 
             {/* MOTIVATION */}
             <div
-              className={`rounded-3xl p-5 ${
+              className={`rounded-3xl p-6 text-white ${
                 dark
-                  ? "bg-linear-to-br from-indigo-600 to-purple-700"
-                  : "bg-linear-to-br from-indigo-500 to-purple-600"
-              } text-white`}
+                  ? "bg-gradient-to-br from-indigo-700 to-purple-700"
+                  : "bg-gradient-to-br from-indigo-500 to-purple-600"
+              }`}
             >
-              <Sparkles className="mb-3" />
+              <Sparkles className="mb-3" size={28} />
 
-              <h2 className="text-xl font-bold">
+              <h2 className="text-2xl font-black">
                 Keep Improving 🚀
               </h2>
 
-              <p className="text-sm opacity-90 mt-2">
+              <p className="text-sm opacity-90 mt-3 leading-6">
                 Small consistent improvements each
                 semester can dramatically boost your
                 CGPA.
@@ -658,13 +599,13 @@ const GPA = ({ dark }) => {
         </div>
 
         {/* SAVED RESULTS */}
-        <div className="mt-10">
+        <div className="mt-12">
 
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-3 mb-6">
             <GraduationCap className="text-indigo-500" />
 
             <div>
-              <h2 className="text-2xl font-black">
+              <h2 className="text-3xl font-black">
                 Saved Results
               </h2>
 
@@ -680,11 +621,11 @@ const GPA = ({ dark }) => {
 
           {!loading && records.length === 0 && (
             <div
-              className={`${card} rounded-3xl p-8 text-center`}
+              className={`${card} rounded-3xl p-10 text-center`}
             >
               <AlertCircle
-                size={45}
-                className="mx-auto mb-3 opacity-40"
+                size={50}
+                className="mx-auto mb-4 opacity-40"
               />
 
               <p className="opacity-70">
@@ -693,22 +634,22 @@ const GPA = ({ dark }) => {
             </div>
           )}
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+
             {records.map((item) => (
               <div
                 key={item.id}
                 className={`${card} rounded-3xl p-5`}
               >
 
-                {/* TOP */}
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-start mb-4">
 
                   <div>
                     <p className="text-sm opacity-60">
                       GPA
                     </p>
 
-                    <h2 className="text-3xl font-black text-indigo-500">
+                    <h2 className="text-4xl font-black text-indigo-500">
                       {item.GPA}
                     </h2>
                   </div>
@@ -723,19 +664,18 @@ const GPA = ({ dark }) => {
                   </button>
                 </div>
 
-                {/* DATE */}
                 <p className="text-xs opacity-50 mb-4">
                   {item.createdAt
                     ?.toDate()
                     .toLocaleDateString()}
                 </p>
 
-                {/* COURSES */}
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+
                   {item.courses.map((c, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl p-3 ${
+                      className={`rounded-2xl p-3 ${
                         dark
                           ? "bg-black/20"
                           : "bg-gray-50"
@@ -765,8 +705,74 @@ const GPA = ({ dark }) => {
             ))}
           </div>
         </div>
-
       </div>
+
+      {/* RESULT POPUP */}
+      {showPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+
+          <div
+            className={`w-full max-w-md rounded-[2rem] p-6 md:p-8 relative animate-[fadeIn_.3s_ease] ${
+              dark
+                ? "bg-[#111827] border border-white/10"
+                : "bg-white"
+            } shadow-2xl`}
+          >
+
+            {/* CLOSE */}
+            <button
+              onClick={() => setShowPopup(false)}
+              className="absolute top-5 right-5 w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="text-center">
+
+              {/* GPA CIRCLE */}
+              <div className="w-40 h-40 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl">
+
+                <div className="w-32 h-32 rounded-full bg-white text-indigo-600 flex items-center justify-center text-5xl font-black">
+                  {gpaValue}
+                </div>
+              </div>
+
+              <h2 className="text-3xl font-black mt-6">
+                Your GPA
+              </h2>
+
+              <p className="opacity-70 mt-2">
+                Academic performance result
+              </p>
+
+              {/* RATING */}
+              <div className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-green-500/10 text-green-500 font-semibold">
+                <Trophy size={18} />
+                {rating}
+              </div>
+
+              {/* SAVE */}
+              <button
+                onClick={handleSave}
+                className="w-full mt-6 py-4 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-bold flex items-center justify-center gap-2 transition"
+              >
+                <SaveIcon size={18} />
+
+                {isSaving
+                  ? "Saving..."
+                  : "Save Result"}
+              </button>
+
+              {/* MESSAGE */}
+              {msg && (
+                <p className="text-sm mt-4 opacity-70">
+                  {msg}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -13,7 +13,7 @@ const Navbar = ({ dark, setDark, setMenuOpen, menuOpen }) => {
   };
 
   return (
-    <div className={`fixed z-30 top-0 left-0 w-full flex justify-between items-center py-3 px-[5%] ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100' }`}>
+    <div className={`fixed z-300 top-0 left-0 w-full flex justify-between items-center py-3 px-[5%] ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100' }`}>
       <Link to={'/dashboard'}>
       <img src={dark ? Images.dark_logo : Images.light_logo} alt="unihelp.ng" className='w-30 md:w-40'/>
       </Link>

@@ -40,7 +40,6 @@ export default function InstallPrompt() {
     }
   };
 
-  // Don't show if dismissed before
   if (localStorage.getItem("install-dismissed")) return null;
 
   if (!show) return null;
@@ -48,9 +47,9 @@ export default function InstallPrompt() {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        <h2 style={styles.title}>Install CampusFlow</h2>
+        <h2 style={styles.title}>Install Unihelp</h2>
         <p style={styles.text}>
-          Get a faster, app-like experience. Install CampusFlow on your device.
+          Get a faster, app-like experience. Install Unihelp on your device.
         </p>
 
         <div style={styles.buttons}>
