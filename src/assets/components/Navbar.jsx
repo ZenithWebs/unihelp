@@ -44,6 +44,8 @@ const Navbar = ({ dark, setDark, setMenuOpen, menuOpen }) => {
             {dark ? <SunIcon size={20} /> : <MoonIcon size={20} />}
           </button>
 
+          
+
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}

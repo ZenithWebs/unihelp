@@ -36,7 +36,7 @@ export default function MyTutorials({ dark }) {
   };
 
   return (
-    <div>
+    <div className="md:pt-20 w-full">
       <h1 className="text-2xl font-bold mb-4"><GraduationCap/> My Tutorials</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

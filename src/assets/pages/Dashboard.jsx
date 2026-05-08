@@ -129,7 +129,7 @@ const Dashboard = ({ dark }) => {
     : "bg-white border border-gray-200 shadow-sm";
 
   return (
-    <div className="py-3 px-4 md:px-6 w-full">
+    <div className="py-3 px-4 md:px-6 md:pt-20 w-full">
 
       {/* HEADER */}
       <div className="mb-6">

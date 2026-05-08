@@ -26,6 +26,8 @@ import {
   BookOpen,
   LayoutDashboard,
   BadgeDollarSign,
+  Wallet,
+  BookOpenCheck,
 } from "lucide-react";
 
 const DashboardLayout = ({ dark, menuOpen, setMenuOpen }) => {
@@ -60,6 +62,21 @@ const DashboardLayout = ({ dark, menuOpen, setMenuOpen }) => {
         { to: "/tutorials", label: "Browse YT Videos", icon: <PlaySquareIcon size={18} /> },
         { to: "/tutorialmarketplace", label: "Find Tutorials", icon: <Video size={18} /> },
         { to: "/lecturenotesmarketplace", label: "Lecture Notes", icon: <NotebookPenIcon size={18} /> },
+        {
+          to: "/my-purchases",
+          label: "My Purchases",
+          icon: <Wallet size={18} />,
+        },
+        {
+          to: "/tutor-dashboard",
+          label: "Tutor Dashboard",
+          icon: <GraduationCap size={18} />,
+        },
+        {
+          to: "/create-tutorial",
+          label: "Upload Tutorial",
+          icon: <BookOpen size={18} />,
+        },
       ],
     },
     {

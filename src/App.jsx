@@ -21,18 +21,23 @@ import TutorialPage from './assets/pages/Tutorials';
 import MyHostels from './assets/pages/MyUploadedHostel';
 import AdminHostelApproval from './assets/pages/AdminHostelApproval';
 import InstallPrompt from './assets/components/InstallPrompt';
-import UploadTutorial from './assets/pages/creator/UploadTutorial';
 import TutorialMarketplace from './assets/pages/TutorialMarketplace';
-import CreatorDashboard from './assets/pages/creator/CreatorDashboard';
 import { Database } from 'lucide-react';
 import AdminDashboard from './assets/pages/AdminDashboard';
-import TutorWithdrawal from './assets/pages/creator/TutorWithdrawal';
 import Contact from './assets/pages/Contact';
 import Report from './assets/pages/Report';
 import StudentMarketplace from './assets/pages/StudentMarketplace';
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "./firebase/config";
 import { requestNotificationPermission } from "./firebaseMessaging";
+import CreateTutorial from './assets/pages/creator/CreateTutorial';
+import TutorDashboard from './assets/pages/creator/TutorDashboard';
+import TutorialDetails from './assets/pages/TutorialDetails';
+import StudentPurchases from './assets/pages/StudentPurchases';
+import ProtectedPdfViewer from './assets/pages/ProtectedPdfViewer';
+import AdminPayments from './assets/pages/AdminPayment';
+import TutorEarnings from './assets/pages/creator/TutorEarnings';
+import AdminWithdrawals from './assets/pages/AdminWithdrawals';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -89,8 +94,11 @@ useEffect(() => {
       <div className={dark ? "bg-slate-900 text-white" : "bg-white text-black"}>
         <Routes>
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard dark={dark} /></ProtectedRoute>} />
-          <Route path="/withdraw" element={<ProtectedRoute><TutorWithdrawal dark={dark} /></ProtectedRoute>} />
-          <Route path='/creatordashboard' element={<ProtectedRoute><CreatorDashboard dark={dark}/> </ProtectedRoute>}/>
+          
+          
+
+
+          
 
 
           <Route path='/' element={<Login dark={dark}/>}/>
@@ -98,7 +106,13 @@ useEffect(() => {
           <Route element={<DashboardLayout setMenuOpen={setMenuOpen}      menuOpen={menuOpen}  dark={dark}/>}>
             <Route path='/dashboard' element={ <ProtectedRoute><Dashboard dark={dark}/></ProtectedRoute> }/>
 
+            <Route path="/adminpayments" element={<ProtectedRoute><AdminPayments dark={dark} /></ProtectedRoute>} />
+
             <Route path='/CGPA' element={<ProtectedRoute><CGPA dark={dark}/></ProtectedRoute>}/>
+
+            <Route path="/earnings" element={<ProtectedRoute><TutorEarnings dark={dark} /></ProtectedRoute>} />
+            
+            <Route path='/admin-withdrawals' element={<ProtectedRoute><AdminWithdrawals dark={dark}/></ProtectedRoute>}/>
 
             <Route path='/GPA' element={<ProtectedRoute><GPA dark={dark}/></ProtectedRoute>}/>
 
@@ -108,9 +122,17 @@ useEffect(() => {
 
             <Route path='/uploadquestion' element={<ProtectedRoute><Upload dark={dark}/> </ProtectedRoute>}/>
 
-            <Route path='/uploadtutorial' element={<ProtectedRoute><UploadTutorial dark={dark}/> </ProtectedRoute>}/>
+            <Route path='/create-tutorial' element={<ProtectedRoute><CreateTutorial dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/my-purchases' element={<ProtectedRoute><StudentPurchases dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path="/tutorial/:id" element={ <ProtectedRoute><TutorialDetails dark={dark} /></ProtectedRoute>  }/>
+
+            <Route path="/pdf/:tutorialId" element={<ProtectedRoute><ProtectedPdfViewer dark={dark} /></ProtectedRoute> }/>
 
             <Route path='/tutorialmarketplace' element={<ProtectedRoute><TutorialMarketplace dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/tutor-dashboard' element={<ProtectedRoute><TutorDashboard dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/lecturenotesmarketplace' element={<ProtectedRoute><LectureNotesMarketplace dark={dark}/> </ProtectedRoute>}/>
 

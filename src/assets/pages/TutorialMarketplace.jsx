@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db, auth } from "../../firebase/config";
+
 import {
   collection,
   getDocs,
@@ -7,66 +7,101 @@ import {
   doc,
   query,
   where,
-  onSnapshot
+  onSnapshot,
 } from "firebase/firestore";
 
-import TutorialCard from "../components/TutorialCard";
-import { GraduationCapIcon } from "lucide-react";
+import { db, auth } from "../../firebase/config";
+
+import {
+  GraduationCap,
+  Search,
+  BookOpen,
+} from "lucide-react";
+
 import { Link } from "react-router-dom";
 
-export default function TutorialMarketplace({ dark }) {
+export default function TutorialMarketplace({
+  dark,
+}) {
   const [tutorials, setTutorials] = useState([]);
-  const [categories, setCategories] = useState(["All"]);
+  const [filtered, setFiltered] = useState([]);
+
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const [purchasedIds, setPurchasedIds] = useState([]);
+  const [category, setCategory] =
+    useState("All");
+
+  const [categories, setCategories] =
+    useState(["All"]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [purchasedIds, setPurchasedIds] =
+    useState([]);
 
   // ============================
-  // 📚 FETCH TUTORIALS
-  // ============================
-  const fetchTutorials = async () => {
-    setLoading(true);
-
-    const snap = await getDocs(collection(db, "tutorials"));
-
-    const data = snap.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-
-    setTutorials(data);
-
-    // ✅ Dynamic categories
-    const uniqueCategories = [
-      "All",
-      ...new Set(
-        data
-          .map(t => t.category?.trim())
-          .filter(Boolean)
-      )
-    ];
-
-    setCategories(uniqueCategories);
-
-    setLoading(false);
-  };
-
-  // ============================
-  // 🔥 REAL-TIME PURCHASE LISTENER
+  // FETCH TUTORIALS
   // ============================
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+    const fetchTutorials = async () => {
+      try {
+        const snap = await getDocs(
+          collection(db, "tutorials")
+        );
+
+        const data = snap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setTutorials(data);
+        setFiltered(data);
+
+        const uniqueCategories = [
+          "All",
+          ...new Set(
+            data
+              .map((item) =>
+                item.category?.trim()
+              )
+              .filter(Boolean)
+          ),
+        ];
+
+        setCategories(uniqueCategories);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTutorials();
+  }, []);
+
+  // ============================
+  // PURCHASES LISTENER
+  // ============================
+  useEffect(() => {
+    if (!auth.currentUser) return;
 
     const q = query(
       collection(db, "purchases"),
-      where("userId", "==", user.uid)
+      where(
+        "userId",
+        "==",
+        auth.currentUser.uid
+      )
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      const ids = snap.docs.map(doc => doc.data().tutorialId);
-      console.log("PURCHASE IDS:", ids);
+      const ids = snap.docs
+        .filter(
+          (doc) =>
+            doc.data().status === "approved"
+        )
+        .map((doc) => doc.data().tutorialId);
+
       setPurchasedIds(ids);
     });
 
@@ -74,128 +109,262 @@ export default function TutorialMarketplace({ dark }) {
   }, []);
 
   // ============================
-  // 🔁 HANDLE PAYMENT REDIRECT
+  // FILTER
   // ============================
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    let temp = [...tutorials];
 
-    if (params.get("status") === "successful") {
-      console.log("✅ Payment successful, waiting for unlock...");
-    }
-  }, []);
-  
-
-  useEffect(() => {
-    fetchTutorials();
-  }, []);
-
-
-  // ============================
-  // 🔍 FILTER
-  // ============================
-  const filtered = tutorials.filter(t => {
-    const matchesCategory =
-      category === "All" ||
-      t.category?.toLowerCase() === category.toLowerCase();
-
-    const matchesSearch =
-      t.title?.toLowerCase().includes(search.toLowerCase());
-
-    return matchesCategory && matchesSearch;
-  });
-
-  // ============================
-  // 🗑 DELETE
-  // ============================
-  const handleDelete = async (id, tutorId) => {
-    if (auth.currentUser?.uid !== tutorId) {
-      alert("You can only delete your own tutorial");
-      return;
+    if (category !== "All") {
+      temp = temp.filter(
+        (item) =>
+          item.category?.toLowerCase() ===
+          category.toLowerCase()
+      );
     }
 
-    if (!window.confirm("Delete this tutorial?")) return;
+    if (search) {
+      temp = temp.filter((item) =>
+        item.title
+          ?.toLowerCase()
+          .includes(search.toLowerCase())
+      );
+    }
 
-    await deleteDoc(doc(db, "tutorials", id));
-    fetchTutorials();
+    setFiltered(temp);
+  }, [search, category, tutorials]);
+
+  // ============================
+  // DELETE
+  // ============================
+  const handleDelete = async (
+    tutorialId,
+    tutorId
+  ) => {
+    try {
+      if (
+        auth.currentUser?.uid !== tutorId
+      ) {
+        alert(
+          "You can only delete your tutorials"
+        );
+        return;
+      }
+
+      if (
+        !window.confirm(
+          "Delete tutorial permanently?"
+        )
+      ) {
+        return;
+      }
+
+      await deleteDoc(
+        doc(db, "tutorials", tutorialId)
+      );
+
+      setTutorials((prev) =>
+        prev.filter(
+          (item) => item.id !== tutorialId
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Delete failed");
+    }
   };
 
   return (
     <div
-      className={`${
-        dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"
-      } min-h-screen w-full p-6`}
+      className={`min-h-screen p-6 ${
+        dark
+          ? "bg-[#0f172a] text-white"
+          : "bg-gray-100 text-black"
+      }`}
     >
-      {/* HEADER LINK */}
-      <Link
-        to="/creatordashboard"
-        className="flex justify-center items-center p-2.5 rounded-lg bg-indigo-500 text-white mb-3.5 w-44 h-10 hover:bg-indigo-400 ml-auto"
-      >
-        Become a Tutor
-      </Link>
-
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-3">
-        <h1 className="text-3xl flex gap-2 items-center font-bold">
-          <GraduationCapIcon size={32} className="text-indigo-500" />
-          Explore Tutorials
-        </h1>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <GraduationCap className="text-blue-500" />
+            Tutorial Marketplace
+          </h1>
 
-        <input
-          placeholder="Search tutorials..."
-          className={`px-4 py-2 rounded-xl outline-none border ${
+          <p className="opacity-70 mt-2">
+            Discover premium tutorials from
+            students and tutors.
+          </p>
+        </div>
+
+        <Link
+          to="/create-tutorial"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
+        >
+          Become a Tutor
+        </Link>
+      </div>
+
+      {/* SEARCH + FILTER */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-8">
+        {/* SEARCH */}
+        <div className="flex-1 relative">
+          <Search
+            className="absolute left-4 top-3.5 opacity-60"
+            size={20}
+          />
+
+          <input
+            type="text"
+            placeholder="Search tutorials..."
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            className={`w-full pl-12 pr-4 py-3 rounded-xl outline-none border ${
+              dark
+                ? "bg-[#1e293b] border-gray-700"
+                : "bg-white border-gray-300"
+            }`}
+          />
+        </div>
+
+        {/* CATEGORY */}
+        <select
+          value={category}
+          onChange={(e) =>
+            setCategory(e.target.value)
+          }
+          className={`px-4 py-3 rounded-xl outline-none border ${
             dark
               ? "bg-[#1e293b] border-gray-700"
               : "bg-white border-gray-300"
           }`}
-          onChange={e => setSearch(e.target.value)}
-        />
-      </div>
-
-      {/* CATEGORY FILTER */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            className={`px-4 py-1 rounded-full text-sm transition ${
-              category === cat
-                ? "bg-blue-600 text-white"
-                : dark
-                ? "bg-[#1e293b]"
-                : "bg-white border"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        >
+          {categories.map((cat) => (
+            <option key={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* LOADING */}
       {loading && (
-        <p className="text-center opacity-60">
+        <div className="text-center opacity-60">
           Loading tutorials...
-        </p>
+        </div>
       )}
 
       {/* EMPTY */}
       {!loading && filtered.length === 0 && (
-        <p className="text-center opacity-60">
+        <div className="text-center opacity-60">
           No tutorials found
-        </p>
+        </div>
       )}
 
       {/* GRID */}
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {filtered.map(tutorial => (
-          <TutorialCard
-            key={tutorial.id}
-            tutorial={tutorial}
-            purchasedIds={purchasedIds}
-            dark={dark}
-            onDelete={handleDelete}
-            isOwner={auth.currentUser?.uid === tutorial.tutorId}
-          />
-        ))}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filtered.map((tutorial) => {
+          const purchased =
+            purchasedIds.includes(
+              tutorial.id
+            );
+
+          return (
+            <div
+              key={tutorial.id}
+              className={`rounded-2xl overflow-hidden shadow-lg transition hover:scale-[1.02] ${
+                dark
+                  ? "bg-[#1e293b]"
+                  : "bg-white"
+              }`}
+            >
+              {/* THUMBNAIL */}
+              <div className="h-52 overflow-hidden relative">
+                {tutorial.thumbnailUrl ? (
+                  <img
+                    src={
+                      tutorial.thumbnailUrl
+                    }
+                    alt={tutorial.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                    No Thumbnail
+                  </div>
+                )}
+
+                {/* PURCHASED */}
+                {purchased && (
+                  <div className="absolute top-3 left-3 bg-green-600 text-white text-xs px-3 py-1 rounded-full">
+                    Purchased
+                  </div>
+                )}
+
+                {/* CATEGORY */}
+                <div className="absolute top-3 right-3 bg-black/70 text-white text-xs px-3 py-1 rounded-full">
+                  {tutorial.category}
+                </div>
+              </div>
+
+              {/* CONTENT */}
+              <div className="p-5">
+                <h2 className="text-xl font-bold line-clamp-1">
+                  {tutorial.title}
+                </h2>
+
+                <p className="text-sm opacity-70 mt-2 line-clamp-2">
+                  {tutorial.description}
+                </p>
+
+                {/* TUTOR */}
+                <div className="flex items-center gap-2 mt-4 text-sm opacity-70">
+                  <BookOpen size={16} />
+
+                  {tutorial.tutorName}
+                </div>
+
+                {/* PRICE */}
+                <div className="mt-5 flex items-center justify-between">
+                  <div className="text-blue-500 font-bold text-2xl">
+                    ₦{tutorial.price}
+                  </div>
+
+                  <div className="text-xs opacity-60">
+                    30 sec preview
+                  </div>
+                </div>
+
+                {/* BUTTONS */}
+                <div className="flex gap-3 mt-5">
+                  {/* OPEN */}
+                  <Link
+                    to={`/tutorial/${tutorial.id}`}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-center"
+                  >
+                    Open
+                  </Link>
+
+                  {/* DELETE */}
+                  {auth.currentUser?.uid ===
+                    tutorial.tutorId && (
+                    <button
+                      onClick={() =>
+                        handleDelete(
+                          tutorial.id,
+                          tutorial.tutorId
+                        )
+                      }
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 rounded-xl"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -294,7 +294,7 @@ const GPA = ({ dark }) => {
   }`;
 
   return (
-    <div className={`min-h-screen ${bg}`}>
+    <div className={`min-h-screen md:pt-20 ${bg}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
         {/* MOBILE CGPA BUTTON */}

@@ -381,7 +381,7 @@ export default function Community({ dark }) {
 
   return (
     <div
-      className={`h-screen w-full flex flex-col overflow-hidden ${
+      className={`h-screen md:pt-20 w-full flex flex-col overflow-hidden ${
         dark
           ? "bg-[#0a0f1c] text-white"
           : "bg-[#f3f4f6] text-black"

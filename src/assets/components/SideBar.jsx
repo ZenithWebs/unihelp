@@ -17,24 +17,51 @@ import {
   ShoppingBag,
   Sparkles,
   BadgeDollarSign,
+  User,
+  Wallet,
 } from "lucide-react";
 
-import React, { useContext, useState } from "react";
-
-import { NavLink, useNavigate } from "react-router-dom";
+import React, { useContext, useState, useEffect } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 
 import { auth } from "../../firebase/config";
-
 import { AuthContext } from "../context/AuthContext";
 
 import ProfilePhoto from "./ProfilePhoto.jsx";
 
 const SideBar = ({ dark }) => {
   const { user } = useContext(AuthContext);
-
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [openDropdown, setOpenDropdown] = useState("Academic");
+  const [openDropdown, setOpenDropdown] =
+    useState("Dashboard");
+
+  /* ---------------- AUTO OPEN ACTIVE SECTION ---------------- */
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (
+      path.includes("tutorial") ||
+      path.includes("lecture") ||
+      path.includes("video")
+    ) {
+      setOpenDropdown("Learning");
+    } else if (
+      path.includes("GPA") ||
+      path.includes("CGPA") ||
+      path.includes("questions")
+    ) {
+      setOpenDropdown("Academic");
+    } else if (
+      path.includes("market") ||
+      path.includes("hostel")
+    ) {
+      setOpenDropdown("Marketplace");
+    } else if (path.includes("ai") || path.includes("community")) {
+      setOpenDropdown("Smart Features");
+    }
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -42,7 +69,9 @@ const SideBar = ({ dark }) => {
   };
 
   const toggleDropdown = (title) => {
-    setOpenDropdown(openDropdown === title ? null : title);
+    setOpenDropdown(
+      openDropdown === title ? null : title
+    );
   };
 
   /* ---------------- MENU ---------------- */
@@ -69,19 +98,16 @@ const SideBar = ({ dark }) => {
           label: "GPA Calculator",
           icon: <CalculatorIcon size={18} />,
         },
-
         {
           to: "/CGPA",
           label: "CGPA Tracking",
           icon: <CalculatorIcon size={18} />,
         },
-
         {
           to: "/questions",
           label: "Past Questions",
           icon: <File size={18} />,
         },
-
         {
           to: "/lecturenotesmarketplace",
           label: "Lecture Notes",
@@ -96,14 +122,28 @@ const SideBar = ({ dark }) => {
       links: [
         {
           to: "/tutorials",
-          label: "YT Videos",
+          label: "YouTube Videos",
           icon: <YoutubeIcon size={18} />,
         },
-
         {
           to: "/tutorialmarketplace",
-          label: "Find Tutorials",
+          label: "Tutorial Marketplace",
           icon: <VideoIcon size={18} />,
+        },
+        {
+          to: "/my-purchases",
+          label: "My Purchases",
+          icon: <Wallet size={18} />,
+        },
+        {
+          to: "/tutor-dashboard",
+          label: "Tutor Dashboard",
+          icon: <GraduationCap size={18} />,
+        },
+        {
+          to: "/create-tutorial",
+          label: "Upload Tutorial",
+          icon: <BookOpen size={18} />,
         },
       ],
     },
@@ -118,9 +158,9 @@ const SideBar = ({ dark }) => {
           icon: <HomeIcon size={18} />,
         },
         {
-            to: '/studentmarketplace',
-            label: 'Student Marketplace',
-            icon: <BadgeDollarSign size={18}/>
+          to: "/studentmarketplace",
+          label: "Student Marketplace",
+          icon: <BadgeDollarSign size={18} />,
         },
       ],
     },
@@ -134,7 +174,6 @@ const SideBar = ({ dark }) => {
           label: "AI Assistance",
           icon: <Brain size={18} />,
         },
-
         {
           to: "/community",
           label: "Community",
@@ -156,7 +195,6 @@ const SideBar = ({ dark }) => {
     >
       {/* MENU */}
       <div className="flex flex-col gap-3">
-
         {menuCategories.map((category, index) => (
           <div
             key={index}
@@ -168,7 +206,9 @@ const SideBar = ({ dark }) => {
           >
             {/* CATEGORY HEADER */}
             <button
-              onClick={() => toggleDropdown(category.title)}
+              onClick={() =>
+                toggleDropdown(category.title)
+              }
               className={`w-full flex items-center justify-between px-4 py-3 font-semibold transition ${
                 dark
                   ? "hover:bg-white/5"
@@ -183,7 +223,8 @@ const SideBar = ({ dark }) => {
               <ChevronDown
                 size={18}
                 className={`transition-all duration-300 ${
-                  openDropdown === category.title
+                  openDropdown ===
+                  category.title
                     ? "rotate-180"
                     : ""
                 }`}
@@ -193,30 +234,33 @@ const SideBar = ({ dark }) => {
             {/* DROPDOWN LINKS */}
             <div
               className={`overflow-hidden transition-all duration-300 ${
-                openDropdown === category.title
+                openDropdown ===
+                category.title
                   ? "max-h-125 py-2"
                   : "max-h-0"
               }`}
             >
               <div className="flex flex-col gap-1 px-2 pb-2">
-                {category.links.map((link, i) => (
-                  <NavLink
-                    key={i}
-                    to={link.to}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                        isActive
-                          ? "bg-indigo-600 text-white"
-                          : dark
-                          ? "hover:bg-white/10"
-                          : "hover:bg-slate-200"
-                      }`
-                    }
-                  >
-                    {link.icon}
-                    {link.label}
-                  </NavLink>
-                ))}
+                {category.links.map(
+                  (link, i) => (
+                    <NavLink
+                      key={i}
+                      to={link.to}
+                      className={({ isActive }) =>
+                        `flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                          isActive
+                            ? "bg-indigo-600 text-white"
+                            : dark
+                            ? "hover:bg-white/10"
+                            : "hover:bg-slate-200"
+                        }`
+                      }
+                    >
+                      {link.icon}
+                      {link.label}
+                    </NavLink>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -232,13 +276,23 @@ const SideBar = ({ dark }) => {
               : "bg-white border border-gray-200"
           }`}
         >
+          {/* USER */}
           <div className="flex items-center relative">
-            <ProfilePhoto user={user} />
+            <span>
+              <ProfilePhoto user={user} />
+
+              <div className="text-xs opacity-60">
+                {user?.email}
+              </div>
+            </span>
+            
 
             <ChevronRight
               size={22}
               className={`absolute right-1 ${
-                dark ? "text-white" : "text-black"
+                dark
+                  ? "text-white"
+                  : "text-black"
               }`}
             />
           </div>
