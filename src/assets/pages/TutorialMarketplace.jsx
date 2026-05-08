@@ -84,17 +84,7 @@ export default function TutorialMarketplace({ dark }) {
     }
   }, []);
   
-  useEffect(() => {
-  const interval = setInterval(() => {
-    fetchPurchases();
-  }, 3000);
 
-  return () => clearInterval(interval);
-}, []);
-
-  // ============================
-  // 🚀 INITIAL LOAD
-  // ============================
   useEffect(() => {
     fetchTutorials();
   }, []);
