@@ -108,7 +108,7 @@ const DashboardLayout = ({ dark, menuOpen, setMenuOpen }) => {
       {/* ================= MOBILE MENU ================= */}
       {menuOpen && (
         <div
-          className={`fixed md:hidden top-0 left-0 h-dvh w-[85%] z-50 overflow-y-auto flex flex-col p-5 ${
+          className={`fixed md:hidden top-0 left-0 h-dvh w-[85%] z-50 overflow-y-auto flex flex-col pt-20 p-5 ${
             dark ? "bg-slate-900 text-white" : "bg-slate-100 text-black"
           }`}
         >
