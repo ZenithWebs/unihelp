@@ -432,7 +432,7 @@ export default function LectureNotesMarketplace({
       ========================================================= */}
 
       <div
-        className={`glass sticky top-0 z-40 mb-5 rounded-3xl border shadow-xl ${
+        className={`glass sticky top-0 z-20 mb-5 rounded-3xl border shadow-xl ${
           dark
             ? "bg-[#111827]/80 border-white/10"
             : "bg-white/80 border-gray-200"
@@ -773,7 +773,7 @@ export default function LectureNotesMarketplace({
                 )
               }
               placeholder="Need CSC301 Data Structures notes..."
-              className={`w-full min-h-[120px] resize-none rounded-2xl p-4 outline-none ${
+              className={`w-full min-h-30 resize-none rounded-2xl p-4 outline-none ${
                 dark
                   ? "bg-[#111827]"
                   : "bg-gray-100"
@@ -856,7 +856,7 @@ export default function LectureNotesMarketplace({
     ========================================================= */}
 
     {showUpload && (
-      <div className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-501 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
         <div
           className={`w-full max-w-xl rounded-[30px] overflow-hidden shadow-2xl animate-fadeUp ${
             dark
@@ -889,7 +889,7 @@ export default function LectureNotesMarketplace({
 
           {/* BODY */}
 
-          <div className="p-6 space-y-4">
+          <div className="px-6 space-y-4">
             {[
               {
                 placeholder: "Note Title",
@@ -930,7 +930,7 @@ export default function LectureNotesMarketplace({
             {/* FILE */}
 
             <label
-              className={`w-full min-h-[160px] rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition ${
+              className={`w-full min-h-30 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition ${
                 dark
                   ? "border-white/10 hover:bg-white/5"
                   : "border-gray-300 hover:bg-gray-50"
@@ -962,7 +962,7 @@ export default function LectureNotesMarketplace({
 
             {file && (
               <div
-                className={`p-4 rounded-2xl text-sm ${
+                className={`p-2 rounded-2xl text-sm ${
                   dark
                     ? "bg-white/5"
                     : "bg-gray-100"
@@ -976,7 +976,7 @@ export default function LectureNotesMarketplace({
 
             {uploading && (
               <div>
-                <div className="flex justify-between text-sm mb-2">
+                <div className="flex justify-between text-sm mb-1">
                   <span>
                     Uploading...
                   </span>
@@ -1002,7 +1002,7 @@ export default function LectureNotesMarketplace({
             <button
               onClick={handleUpload}
               disabled={uploading}
-              className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium transition-all active:scale-[0.98]"
+              className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium transition-all active:scale-[0.98] mb-3"
             >
               {uploading
                 ? "Uploading..."

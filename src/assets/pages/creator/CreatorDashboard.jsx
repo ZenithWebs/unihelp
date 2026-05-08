@@ -40,7 +40,7 @@ export default function CreatorDashboard({ dark }) {
     <div className={`flex min-h-screen ${dark ? "bg-[#0f172a] text-white" : "bg-gray-100 text-black"}`}>
 
       {/* MOBILE TOP BAR */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-[#020617] text-white">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-500 flex items-center justify-between p-4 bg-[#020617] text-white">
         <h1 className="font-bold flex items-center"><ActivitySquare size={33}/> Creator</h1>
         <button onClick={() => setOpen(true)}>☰</button>
       </div>

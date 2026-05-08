@@ -951,17 +951,17 @@ const AIAssistant = ({ dark = true }) => {
           ========================================================= */}
 
           <div
-            className={`border-t p-3 sm:p-4 ${
+            className={`border-t p-2 sm:p-4 ${
               dark
                 ? "border-white/10"
                 : "border-gray-200"
             }`}
           >
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center justify-between gap-1 sm:gap-3">
 
               {/* FILE BUTTON */}
 
-              <label className="w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition flex items-center justify-center text-white shadow-lg cursor-pointer shrink-0">
+              <label className="w-10 h-10 rounded-2xl bg-linear-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition flex items-center justify-center text-white shadow-lg cursor-pointer shrink-0">
                 <Plus className="w-5 h-5" />
 
                 <input
@@ -989,14 +989,14 @@ const AIAssistant = ({ dark = true }) => {
                   e.key === "Enter" &&
                   handleSend()
                 }
-                className={`flex-1 h-12 rounded-2xl px-4 border outline-none text-sm sm:text-base ${inputBg}`}
+                className={`flex-1 shrink h-10 rounded-2xl px-4 border outline-none text-sm sm:text-base ${inputBg}`}
               />
 
               {/* SEND */}
 
               <button
                 onClick={handleSend}
-                className="w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition flex items-center justify-center text-white shadow-lg shrink-0"
+                className="w-10 h-10 rounded-2xl bg-linear-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition flex items-center justify-center text-white shadow-lg shrink-0"
               >
                 <Send className="w-5 h-5" />
               </button>
