@@ -1,4 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 
 import {
   Brain,
@@ -20,9 +25,14 @@ import {
   Zap,
   Bot,
   Trash2,
+  PanelLeftOpen,
+  Gift,
 } from "lucide-react";
 
-import { auth, db } from "../../firebase/config";
+import {
+  auth,
+  db,
+} from "../../firebase/config";
 
 import {
   doc,
@@ -35,6 +45,9 @@ import {
   orderBy,
   limit,
   getDoc,
+  updateDoc,
+  increment,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import {
@@ -51,22 +64,34 @@ import Logo from "../images/Logo_Dark.png";
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   pdfWorker;
 
-const AIAssistant = ({ dark = true }) => {
+/* =========================================================
+    CONFIG
+========================================================= */
+
+const FREE_DAILY_MESSAGES = 5;
+
+const COST_PER_MESSAGE = 18;
+
+const AIAssistant = ({
+  dark = true,
+}) => {
   /* =========================================================
       STATES
   ========================================================= */
 
-  const [messages, setMessages] = useState([
-    {
-      role: "ai",
-      text: "Hi 👋 I'm your AI assistant. Upload a PDF or ask me anything about your courses, CGPA, assignments or exams.",
-    },
-  ]);
+  const [messages, setMessages] =
+    useState([
+      {
+        role: "ai",
+        text: "Hi 👋 I'm your AI assistant. Upload a PDF or ask me anything about your courses, assignments, CGPA or exams.",
+      },
+    ]);
 
   const [chatId, setChatId] =
     useState(null);
 
-  const [input, setInput] = useState("");
+  const [input, setInput] =
+    useState("");
 
   const [loading, setLoading] =
     useState(false);
@@ -77,7 +102,11 @@ const AIAssistant = ({ dark = true }) => {
   const [activeDoc, setActiveDoc] =
     useState(null);
 
-  const [tokens, setTokens] = useState(0);
+  const [tokens, setTokens] =
+    useState(0);
+
+  const [freeMessages, setFreeMessages] =
+    useState(0);
 
   const [warning, setWarning] =
     useState("");
@@ -85,32 +114,40 @@ const AIAssistant = ({ dark = true }) => {
   const [showUpgrade, setShowUpgrade] =
     useState(false);
 
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
+
   const chatRef = useRef(null);
 
-  const controllerRef = useRef(null);
+  const controllerRef =
+    useRef(null);
 
   /* =========================================================
       THEME
   ========================================================= */
 
   const bg = dark
-    ? "bg-[#070b14] text-white"
+    ? "bg-[#050816] text-white"
     : "bg-[#f4f7fb] text-gray-900";
 
   const card = dark
-    ? "bg-[#101826] border border-white/10"
+    ? "bg-white/[0.03] border border-white/10 backdrop-blur-2xl"
     : "bg-white border border-gray-200";
 
+  const softCard = dark
+    ? "bg-white/[0.04]"
+    : "bg-gray-100";
+
   const inputBg = dark
-    ? "bg-[#1b2435] border-white/10 text-white placeholder:text-gray-500"
+    ? "bg-[#121a2d] border-white/10 text-white placeholder:text-gray-500"
     : "bg-gray-100 border-gray-300 text-gray-900 placeholder:text-gray-400";
 
   const bubbleAi = dark
-    ? "bg-[#1b2435] text-white"
+    ? "bg-[#121a2d] text-white"
     : "bg-gray-100 text-gray-900";
 
   /* =========================================================
-      TOKENS
+      LOAD TOKENS
   ========================================================= */
 
   const loadTokens = async () => {
@@ -123,11 +160,13 @@ const AIAssistant = ({ dark = true }) => {
         auth.currentUser.uid
       );
 
-      const snap = await getDoc(tokenRef);
+      const snap =
+        await getDoc(tokenRef);
 
       if (!snap.exists()) {
         await setDoc(tokenRef, {
-          userId: auth.currentUser.uid,
+          userId:
+            auth.currentUser.uid,
           balance: 0,
         });
 
@@ -142,12 +181,116 @@ const AIAssistant = ({ dark = true }) => {
     }
   };
 
+  /* =========================================================
+      DAILY FREE MESSAGES
+  ========================================================= */
+
+  const loadDailyMessages =
+    async () => {
+      if (!auth.currentUser) return;
+
+      try {
+        const dailyRef = doc(
+          db,
+          "dailyFreeMessages",
+          auth.currentUser.uid
+        );
+
+        const snap =
+          await getDoc(dailyRef);
+
+        const now = new Date();
+
+        const today = `${now.getFullYear()}-${
+          now.getMonth() + 1
+        }-${now.getDate()}`;
+
+        /*
+            FIRST TIME USER
+        */
+
+        if (!snap.exists()) {
+          await setDoc(dailyRef, {
+            userId:
+              auth.currentUser.uid,
+
+            date: today,
+
+            remaining:
+              FREE_DAILY_MESSAGES,
+
+            createdAt:
+              serverTimestamp(),
+          });
+
+          setFreeMessages(
+            FREE_DAILY_MESSAGES
+          );
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "ai",
+              text: `🎁 You received ${FREE_DAILY_MESSAGES} free AI messages for today.`,
+            },
+          ]);
+
+          return;
+        }
+
+        const data = snap.data();
+
+        /*
+            NEW DAY RESET
+        */
+
+        if (data.date !== today) {
+          await updateDoc(
+            dailyRef,
+            {
+              date: today,
+
+              remaining:
+                FREE_DAILY_MESSAGES,
+            }
+          );
+
+          setFreeMessages(
+            FREE_DAILY_MESSAGES
+          );
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "ai",
+              text: `🎁 Your ${FREE_DAILY_MESSAGES} free daily AI messages have been refreshed.`,
+            },
+          ]);
+        } else {
+          setFreeMessages(
+            data.remaining || 0
+          );
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+  /* =========================================================
+      USE EFFECTS
+  ========================================================= */
+
   useEffect(() => {
     loadTokens();
+
+    loadDailyMessages();
   }, []);
 
   useEffect(() => {
-    if (tokens <= 50 && tokens > 0) {
+    if (
+      tokens <= 50 &&
+      tokens > 0
+    ) {
       setWarning(
         "⚠️ Low tokens remaining. Please top up."
       );
@@ -156,13 +299,11 @@ const AIAssistant = ({ dark = true }) => {
     }
   }, [tokens]);
 
-  /* =========================================================
-      AUTO SCROLL
-  ========================================================= */
-
   useEffect(() => {
     chatRef.current?.scrollTo({
-      top: chatRef.current.scrollHeight,
+      top:
+        chatRef.current
+          .scrollHeight,
       behavior: "smooth",
     });
   }, [messages, loading]);
@@ -171,37 +312,54 @@ const AIAssistant = ({ dark = true }) => {
       SAVE CHAT
   ========================================================= */
 
-  const saveChat = async (msgs) => {
+  const saveChat = async (
+    msgs
+  ) => {
     if (!auth.currentUser) return;
 
-    const cleanMessages = msgs.map(
-      (m) => ({
+    const cleanMessages =
+      msgs.map((m) => ({
         role: m?.role || "ai",
         text: m?.text || "",
-      })
-    );
+      }));
 
     try {
       if (!chatId) {
-        const newChat = await addDoc(
-          collection(db, "aiChats"),
-          {
-            userId:
-              auth.currentUser.uid,
-            messages: cleanMessages,
-            createdAt: new Date(),
-          }
-        );
+        const newChat =
+          await addDoc(
+            collection(
+              db,
+              "aiChats"
+            ),
+            {
+              userId:
+                auth.currentUser.uid,
+
+              messages:
+                cleanMessages,
+
+              createdAt:
+                new Date(),
+            }
+          );
 
         setChatId(newChat.id);
       } else {
         await setDoc(
-          doc(db, "aiChats", chatId),
+          doc(
+            db,
+            "aiChats",
+            chatId
+          ),
           {
             userId:
               auth.currentUser.uid,
-            messages: cleanMessages,
-            updatedAt: new Date(),
+
+            messages:
+              cleanMessages,
+
+            updatedAt:
+              new Date(),
           }
         );
       }
@@ -225,19 +383,27 @@ const AIAssistant = ({ dark = true }) => {
           "==",
           auth.currentUser.uid
         ),
-        orderBy("createdAt", "desc"),
+        orderBy(
+          "createdAt",
+          "desc"
+        ),
         limit(1)
       );
 
-      const snap = await getDocs(q);
+      const snap =
+        await getDocs(q);
 
       if (!snap.empty) {
-        const lastChat = snap.docs[0];
+        const lastChat =
+          snap.docs[0];
 
-        setChatId(lastChat.id);
+        setChatId(
+          lastChat.id
+        );
 
         setMessages(
-          lastChat.data().messages
+          lastChat.data()
+            .messages
         );
       }
     } catch (err) {
@@ -250,9 +416,10 @@ const AIAssistant = ({ dark = true }) => {
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      saveChat(messages);
-    }, 1200);
+    const timeout =
+      setTimeout(() => {
+        saveChat(messages);
+      }, 1200);
 
     return () =>
       clearTimeout(timeout);
@@ -270,139 +437,166 @@ const AIAssistant = ({ dark = true }) => {
 
     let current = "";
 
-    text.split(" ").forEach((word) => {
-      if (
-        (current + word).length > size
-      ) {
-        chunks.push(current);
+    text.split(" ").forEach(
+      (word) => {
+        if (
+          (
+            current + word
+          ).length > size
+        ) {
+          chunks.push(current);
 
-        current = word;
-      } else {
-        current += " " + word;
+          current = word;
+        } else {
+          current +=
+            " " + word;
+        }
       }
-    });
+    );
 
-    if (current) chunks.push(current);
+    if (current)
+      chunks.push(current);
 
     return chunks;
   };
 
-  const extractPDFText = async (
-    file
-  ) => {
-    const reader = new FileReader();
+  const extractPDFText =
+    async (file) => {
+      const reader =
+        new FileReader();
 
-    return new Promise(
-      (resolve, reject) => {
-        reader.onload = async () => {
-          try {
-            const typedArray =
-              new Uint8Array(
-                reader.result
-              );
+      return new Promise(
+        (
+          resolve,
+          reject
+        ) => {
+          reader.onload =
+            async () => {
+              try {
+                const typedArray =
+                  new Uint8Array(
+                    reader.result
+                  );
 
-            const pdf =
-              await pdfjsLib.getDocument(
-                typedArray
-              ).promise;
+                const pdf =
+                  await pdfjsLib.getDocument(
+                    typedArray
+                  ).promise;
 
-            let fullText = "";
+                let fullText =
+                  "";
 
-            for (
-              let i = 1;
-              i <= pdf.numPages;
-              i++
-            ) {
-              const page =
-                await pdf.getPage(i);
+                for (
+                  let i = 1;
+                  i <=
+                  pdf.numPages;
+                  i++
+                ) {
+                  const page =
+                    await pdf.getPage(
+                      i
+                    );
 
-              const content =
-                await page.getTextContent();
+                  const content =
+                    await page.getTextContent();
 
-              const strings =
-                content.items.map(
-                  (item) => item.str
-                );
+                  const strings =
+                    content.items.map(
+                      (
+                        item
+                      ) =>
+                        item.str
+                    );
 
-              fullText +=
-                strings.join(" ") + "\n";
-            }
+                  fullText +=
+                    strings.join(
+                      " "
+                    ) + "\n";
+                }
 
-            resolve({
-              chunks:
-                splitIntoChunks(
-                  fullText
-                ),
-            });
-          } catch (err) {
-            reject(err);
-          }
-        };
+                resolve({
+                  chunks:
+                    splitIntoChunks(
+                      fullText
+                    ),
+                });
+              } catch (err) {
+                reject(err);
+              }
+            };
 
-        reader.readAsArrayBuffer(file);
-      }
-    );
-  };
+          reader.readAsArrayBuffer(
+            file
+          );
+        }
+      );
+    };
 
-  const handleFileUpload = async (
-    e
-  ) => {
-    const selected =
-      e.target.files[0];
+  const handleFileUpload =
+    async (e) => {
+      const selected =
+        e.target.files[0];
 
-    if (!selected) return;
+      if (!selected) return;
 
-    if (
-      selected.type !==
-      "application/pdf"
-    ) {
-      alert("Only PDF allowed");
-
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { chunks } =
-        await extractPDFText(
-          selected
+      if (
+        selected.type !==
+        "application/pdf"
+      ) {
+        alert(
+          "Only PDF allowed"
         );
 
-      setPdfChunks(chunks);
+        return;
+      }
 
-      setActiveDoc(selected.name);
+      setLoading(true);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "user",
-          text: `📄 Uploaded: ${selected.name}`,
-        },
-        {
-          role: "ai",
-          text: "✅ PDF processed successfully. Ask me anything about the document.",
-        },
-      ]);
-    } catch (err) {
-      console.log(err);
-    }
+      try {
+        const { chunks } =
+          await extractPDFText(
+            selected
+          );
 
-    setLoading(false);
-  };
+        setPdfChunks(chunks);
+
+        setActiveDoc(
+          selected.name
+        );
+
+        setMessages(
+          (prev) => [
+            ...prev,
+            {
+              role: "user",
+              text: `📄 Uploaded: ${selected.name}`,
+            },
+            {
+              role: "ai",
+              text: "✅ PDF processed successfully. Ask me anything about the document.",
+            },
+          ]
+        );
+      } catch (err) {
+        console.log(err);
+      }
+
+      setLoading(false);
+    };
 
   /* =========================================================
-      STOP GENERATION
+      STOP
   ========================================================= */
 
-  const stopGeneration = () => {
-    controllerRef.current?.abort();
+  const stopGeneration =
+    () => {
+      controllerRef.current?.abort();
 
-    setLoading(false);
-  };
+      setLoading(false);
+    };
 
   /* =========================================================
-      CLEAR CHAT
+      CLEAR
   ========================================================= */
 
   const clearChat = () => {
@@ -419,17 +613,32 @@ const AIAssistant = ({ dark = true }) => {
   };
 
   /* =========================================================
-      SEND MESSAGE
+      SEND
   ========================================================= */
 
   const handleSend = async () => {
-    if (!input.trim() || loading)
+    if (
+      !input.trim() ||
+      loading
+    )
       return;
 
-    const COST_PER_MESSAGE = 18;
+    /*
+        USE FREE MESSAGES FIRST
+    */
+
+    const usingFreeMessage =
+      freeMessages > 0;
+
+    /*
+        NO FREE MESSAGE LEFT
+        USE TOKENS
+    */
 
     if (
-      tokens < COST_PER_MESSAGE
+      !usingFreeMessage &&
+      tokens <
+        COST_PER_MESSAGE
     ) {
       setShowUpgrade(true);
 
@@ -437,7 +646,7 @@ const AIAssistant = ({ dark = true }) => {
         ...prev,
         {
           role: "ai",
-          text: "🚫 Not enough tokens. Please top up.",
+          text: "🚫 You have used all your free daily messages and don't have enough tokens.",
         },
       ]);
 
@@ -454,26 +663,61 @@ const AIAssistant = ({ dark = true }) => {
       userMsg,
     ];
 
-    setMessages(updatedMessages);
+    setMessages(
+      updatedMessages
+    );
 
     setInput("");
 
     setLoading(true);
 
     try {
+      /*
+          DEDUCT FREE MESSAGE
+      */
+
+      if (
+        usingFreeMessage
+      ) {
+        const newRemaining =
+          freeMessages - 1;
+
+        setFreeMessages(
+          newRemaining
+        );
+
+        const dailyRef = doc(
+          db,
+          "dailyFreeMessages",
+          auth.currentUser.uid
+        );
+
+        await updateDoc(
+          dailyRef,
+          {
+            remaining:
+              newRemaining,
+          }
+        );
+      }
+
       let contextText = "";
 
-      if (pdfChunks.length > 0) {
-        contextText = pdfChunks
-          .slice(0, 3)
-          .join("\n");
+      if (
+        pdfChunks.length > 0
+      ) {
+        contextText =
+          pdfChunks
+            .slice(0, 3)
+            .join("\n");
       }
 
       const token =
         await auth.currentUser?.getIdToken();
 
       const API_URL =
-        import.meta.env.VITE_API_URL;
+        import.meta.env
+          .VITE_API_URL;
 
       const res = await fetch(
         `${API_URL}/api/ai/chat`,
@@ -493,7 +737,8 @@ const AIAssistant = ({ dark = true }) => {
                 -6
               ),
 
-            context: contextText,
+            context:
+              contextText,
           }),
 
           signal:
@@ -507,7 +752,8 @@ const AIAssistant = ({ dark = true }) => {
 
       if (!res.ok)
         throw new Error(
-          data.error || "Error"
+          data.error ||
+            "Error"
         );
 
       const aiReply = {
@@ -520,13 +766,24 @@ const AIAssistant = ({ dark = true }) => {
         aiReply,
       ];
 
-      setMessages(finalMessages);
+      setMessages(
+        finalMessages
+      );
 
       await saveChat(
         finalMessages
       );
 
-      await loadTokens();
+      /*
+          LOAD TOKENS
+          ONLY IF NOT USING FREE
+      */
+
+      if (
+        !usingFreeMessage
+      ) {
+        await loadTokens();
+      }
     } catch (err) {
       console.log(err);
 
@@ -594,44 +851,51 @@ const AIAssistant = ({ dark = true }) => {
 
   const payNow = () => {
     handlePayment({
-      callback: async (
-        response
-      ) => {
-        closePaymentModal();
+      callback:
+        async (
+          response
+        ) => {
+          closePaymentModal();
 
-        try {
-          const API_URL =
-            import.meta.env
-              .VITE_API_URL;
+          try {
+            const API_URL =
+              import.meta.env
+                .VITE_API_URL;
 
-          await fetch(
-            `${API_URL}/api/ai/verify-payment`,
-            {
-              method: "POST",
+            await fetch(
+              `${API_URL}/api/ai/verify-payment`,
+              {
+                method:
+                  "POST",
 
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
+                headers:
+                  {
+                    "Content-Type":
+                      "application/json",
+                  },
 
-              body: JSON.stringify({
-                transaction_id:
-                  response.transaction_id,
-              }),
-            }
-          );
+                body: JSON.stringify(
+                  {
+                    transaction_id:
+                      response.transaction_id,
+                  }
+                ),
+              }
+            );
 
-          await loadTokens();
+            await loadTokens();
 
-          setShowUpgrade(false);
+            setShowUpgrade(
+              false
+            );
 
-          alert(
-            "✅ Tokens added successfully"
-          );
-        } catch (err) {
-          console.log(err);
-        }
-      },
+            alert(
+              "✅ Tokens added successfully"
+            );
+          } catch (err) {
+            console.log(err);
+          }
+        },
 
       onClose: () => {},
     });
@@ -667,206 +931,278 @@ const AIAssistant = ({ dark = true }) => {
     },
   ];
 
-
   return (
     <div
-      className={`min-h-screen w-full ${bg} md:pt-14 overflow-hidden`}
+      className={`min-h-screen md:pt-20 overflow-hidden ${bg}`}
     >
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-3 md:py-6">
+      {/* BG */}
+
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-[-100px] left-[-100px] w-[320px] h-[320px] bg-indigo-600/20 blur-[120px] rounded-full" />
+
+        <div className="absolute bottom-[-100px] right-[-100px] w-[320px] h-[320px] bg-violet-600/20 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="flex h-screen">
+
+        {/* SIDEBAR */}
 
         <div
-          className={`${card} rounded-3xl p-4 sm:p-5 md:p-7 mb-4 md:mb-6 backdrop-blur-xl shadow-2xl`}
+          className={`fixed lg:relative z-500 top-16 left-0 h-full w-[290px] transition-transform duration-300 ${
+            sidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
+          } ${card}`}
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <div className="flex flex-col h-full">
 
-            {/* LEFT */}
+            {/* HEADER */}
 
-            <div className="flex items-start sm:items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shrink-0">
-                <Brain className="w-7 h-7" />
-              </div>
+            <div className="p-5 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center">
+                  <Brain className="text-white" />
+                </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                    AI Assistant
+                <div>
+                  <h1 className="font-black text-xl">
+                    UniHelp AI
                   </h1>
 
-                  <div className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold flex items-center gap-1">
-                    <Sparkles size={12} />
-                    Smart AI
+                  <p className="text-xs opacity-60">
+                    Smart Assistant
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() =>
+                  setSidebarOpen(
+                    false
+                  )
+                }
+                className="lg:hidden"
+              >
+                <X />
+              </button>
+            </div>
+
+            {/* CONTENT */}
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+              {/* FREE MESSAGES */}
+
+              <div
+                className={`${softCard} rounded-3xl p-4 border border-yellow-500/20`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-60">
+                      FREE DAILY
+                    </p>
+
+                    <h2 className="text-3xl font-black text-yellow-400 mt-1">
+                      {
+                        freeMessages
+                      }
+                    </h2>
+                  </div>
+
+                  <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 flex items-center justify-center">
+                    <Gift className="text-yellow-400" />
                   </div>
                 </div>
 
-                <p className="opacity-70 text-sm sm:text-base mt-1">
-                  Smart academic assistant
-                  for PDFs, assignments,
-                  CGPA & learning support
+                <p className="text-xs opacity-60 mt-3">
+                  Free users get 5
+                  AI messages daily
                 </p>
               </div>
-            </div>
-
-            {/* RIGHT */}
-
-            <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
 
               {/* TOKENS */}
 
               <div
-                className={`rounded-2xl p-4 min-w-32.5 ${
-                  dark
-                    ? "bg-indigo-500/10 border border-indigo-500/20"
-                    : "bg-indigo-50 border border-indigo-100"
-                }`}
+                className={`${softCard} rounded-3xl p-4 border border-indigo-500/20`}
               >
-                <div className="flex items-center gap-2 text-xs opacity-70 mb-1">
-                  <Zap size={14} />
-                  TOKENS
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-60">
+                      TOKENS
+                    </p>
+
+                    <h2 className="text-3xl font-black text-indigo-400 mt-1">
+                      {tokens}
+                    </h2>
+                  </div>
+
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+                    <Zap className="text-indigo-400" />
+                  </div>
                 </div>
 
-                <h2 className="text-2xl font-black text-indigo-500">
-                  {tokens}
-                </h2>
+                <p className="text-xs opacity-60 mt-3">
+                  Used after free
+                  messages finish
+                </p>
               </div>
 
-              {/* MESSAGES */}
+              {/* QUICK ACTIONS */}
 
-              <div
-                className={`rounded-2xl p-4 min-w-32.5 ${
-                  dark
-                    ? "bg-green-500/10 border border-green-500/20"
-                    : "bg-green-50 border border-green-100"
-                }`}
-              >
-                <div className="flex items-center gap-2 text-xs opacity-70 mb-1">
-                  <MessageSquare
-                    size={14}
-                  />
-                  MESSAGES
+              <div className="space-y-3">
+                {quickActions.map(
+                  (
+                    item,
+                    index
+                  ) => (
+                    <button
+                      key={index}
+                      onClick={() =>
+                        setInput(
+                          item.text
+                        )
+                      }
+                      className={`${softCard} w-full border border-white/10 rounded-2xl p-4 text-left hover:border-indigo-500/30 transition`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                          <item.icon className="text-indigo-400 w-5 h-5" />
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold text-sm">
+                            {
+                              item.label
+                            }
+                          </h3>
+
+                          <p className="text-xs opacity-60 mt-1">
+                            Quick AI
+                            prompt
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                )}
+              </div>
+
+              {/* ACTIVE PDF */}
+
+              {activeDoc && (
+                <div
+                  className={`${softCard} rounded-3xl p-4 border border-green-500/20`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-green-500/10 flex items-center justify-center">
+                      <FileText className="text-green-400" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm">
+                        Active PDF
+                      </p>
+
+                      <p className="text-xs opacity-60 truncate mt-1">
+                        {
+                          activeDoc
+                        }
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                <h2 className="text-2xl font-black text-green-500">
-                  {Math.floor(
-                    tokens / 18
-                  )}
-                </h2>
-              </div>
-
+              )}
             </div>
-          </div>
 
-          {/* WARNING */}
+            {/* FOOTER */}
 
-          {warning && (
-            <div className="mt-5 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-red-400 text-sm">
-              {warning}
-            </div>
-          )}
-        </div>
-
-        {/* =========================================================
-            QUICK ACTIONS
-        ========================================================= */}
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4 md:mb-6">
-          {quickActions.map(
-            (item, index) => (
+            <div className="p-4 border-t border-white/10">
               <button
-                key={index}
-                onClick={() =>
-                  setInput(item.text)
+                onClick={
+                  clearChat
                 }
-                className={`${card} rounded-2xl p-4 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 text-left shadow-lg`}
+                className="w-full h-12 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold transition flex items-center justify-center gap-2"
               >
-                <item.icon className="text-indigo-500 mb-3 w-6 h-6" />
-
-                <h3 className="font-bold text-sm sm:text-base">
-                  {item.label}
-                </h3>
-
-                <p className="text-xs opacity-60 mt-1">
-                  Quick AI prompt
-                </p>
+                <Trash2 size={18} />
+                Clear Chat
               </button>
-            )
-          )}
+            </div>
+          </div>
         </div>
 
-        {/* =========================================================
-            ACTIVE PDF
-        ========================================================= */}
+        {/* MAIN */}
 
-        {activeDoc && (
-          <div
-            className={`${card} rounded-2xl p-4 mb-4 md:mb-6 flex items-center gap-3 shadow-lg`}
-          >
-            <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center shrink-0">
-              <FileText className="text-green-500" />
-            </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
 
-            <div className="min-w-0 flex-1">
-              <p className="font-bold text-sm sm:text-base">
-                Active PDF
-              </p>
+          {/* HEADER */}
 
-              <p className="text-xs sm:text-sm opacity-70 truncate">
-                {activeDoc}
-              </p>
-            </div>
+          <div className="px-4 sm:px-6 py-4 border-b border-white/10 backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-4">
 
-            <CheckCircle2 className="text-green-500 shrink-0" />
-          </div>
-        )}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() =>
+                    setSidebarOpen(
+                      true
+                    )
+                  }
+                  className="lg:hidden w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center"
+                >
+                  <PanelLeftOpen />
+                </button>
 
-        {/* =========================================================
-            CHAT CONTAINER
-        ========================================================= */}
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-xl sm:text-3xl font-black">
+                      AI Study
+                      Assistant
+                    </h1>
 
-        <div
-          className={`${card} rounded-3xl overflow-hidden shadow-2xl`}
-        >
+                    <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold flex items-center gap-1">
+                      <Sparkles size={12} />
+                      GPT Powered
+                    </div>
+                  </div>
 
-          {/* TOP BAR */}
-
-          <div
-            className={`flex items-center justify-between px-4 sm:px-5 py-4 border-b ${
-              dark
-                ? "border-white/10"
-                : "border-gray-200"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <MessageSquare className="text-indigo-500" />
-
-              <div>
-                <h2 className="font-bold text-sm sm:text-base">
-                  Conversation
-                </h2>
-
-                <p className="text-[11px] sm:text-xs opacity-60">
-                  Ask anything academically
-                </p>
+                  <p className="opacity-60 mt-1 text-xs sm:text-sm">
+                    Learn faster
+                    with AI
+                  </p>
+                </div>
               </div>
+
+              <button
+                onClick={() =>
+                  setShowUpgrade(
+                    true
+                  )
+                }
+                className="h-11 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-xl flex items-center gap-2"
+              >
+                <Crown size={18} />
+                Upgrade
+              </button>
+
             </div>
 
-            <button
-              onClick={clearChat}
-              className="w-10 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition"
-            >
-              <Trash2 size={18} />
-            </button>
+            {warning && (
+              <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-400 text-sm">
+                {warning}
+              </div>
+            )}
           </div>
 
-          {/* =========================================================
-              MESSAGES
-          ========================================================= */}
+          {/* CHAT */}
 
           <div
             ref={chatRef}
-            className="h-[58vh] sm:h-[60vh] overflow-y-auto px-3 sm:px-4 md:px-6 py-5 space-y-5"
+            className="flex-1 overflow-y-auto px-3 sm:px-6 py-6 space-y-6"
           >
             {messages.map(
-              (msg, index) => (
+              (
+                msg,
+                index
+              ) => (
                 <div
                   key={index}
                   className={`flex ${
@@ -877,22 +1213,21 @@ const AIAssistant = ({ dark = true }) => {
                   }`}
                 >
                   <div
-                    className={`flex gap-3 items-end max-w-[97%] sm:max-w-[90%] md:max-w-[78%] ${
+                    className={`flex gap-3 items-end max-w-[95%] md:max-w-[78%] ${
                       msg.role ===
                       "user"
                         ? "flex-row-reverse"
                         : ""
                     }`}
                   >
-
                     {/* AVATAR */}
 
                     <div
-                      className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
                         msg.role ===
                         "user"
-                          ? "bg-indigo-600 text-white"
-                          : "bg-green-500 text-white"
+                          ? "bg-gradient-to-br from-indigo-600 to-violet-600"
+                          : "bg-gradient-to-br from-emerald-500 to-green-600"
                       }`}
                     >
                       {msg.role ===
@@ -906,16 +1241,15 @@ const AIAssistant = ({ dark = true }) => {
                     {/* MESSAGE */}
 
                     <div
-                      className={`px-4 py-3 sm:px-5 sm:py-4 rounded-3xl text-sm sm:text-[15px] leading-relaxed shadow-lg whitespace-pre-wrap wrap-break-words ${
+                      className={`px-5 py-4 rounded-[28px] text-sm sm:text-[15px] leading-relaxed whitespace-pre-wrap break-words shadow-xl ${
                         msg.role ===
                         "user"
-                          ? "bg-linear-to-r from-indigo-600 to-violet-600 text-white rounded-br-md"
-                          : `${bubbleAi} rounded-bl-md`
+                          ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-br-md"
+                          : `${bubbleAi} rounded-bl-md border border-white/5`
                       }`}
                     >
                       {msg.text}
                     </div>
-
                   </div>
                 </div>
               )
@@ -925,14 +1259,15 @@ const AIAssistant = ({ dark = true }) => {
 
             {loading && (
               <div className="flex items-center gap-3 text-sm opacity-70">
-                <Loader2
-                  className="animate-spin text-indigo-500"
-                  size={18}
-                />
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-indigo-400" />
+                </div>
 
-                <span>
+                <div
+                  className={`${bubbleAi} border border-white/5 rounded-2xl px-4 py-3`}
+                >
                   AI is thinking...
-                </span>
+                </div>
 
                 <button
                   onClick={
@@ -946,148 +1281,162 @@ const AIAssistant = ({ dark = true }) => {
             )}
           </div>
 
-          {/* =========================================================
-              INPUT AREA
-          ========================================================= */}
+          {/* INPUT */}
 
-          <div
-            className={`border-t p-2 sm:p-4 ${
-              dark
-                ? "border-white/10"
-                : "border-gray-200"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-1 sm:gap-3">
+          <div className="p-3 sm:p-5 border-t border-white/10 backdrop-blur-xl">
 
-              {/* FILE BUTTON */}
+            <div
+              className={`${card} rounded-[32px] p-3 shadow-2xl`}
+            >
+              <div className="flex items-end gap-3">
 
-              <label className="w-10 h-10 rounded-2xl bg-linear-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition flex items-center justify-center text-white shadow-lg cursor-pointer shrink-0">
-                <Plus className="w-5 h-5" />
+                {/* FILE */}
 
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={
-                    handleFileUpload
+                <label className="w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center text-white cursor-pointer shrink-0">
+                  <Plus className="w-5 h-5" />
+
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={
+                      handleFileUpload
+                    }
+                    className="hidden"
+                  />
+                </label>
+
+                {/* INPUT */}
+
+                <div className="flex-1">
+                  <textarea
+                    rows={1}
+                    placeholder="Ask anything academically..."
+                    value={input}
+                    onChange={(
+                      e
+                    ) =>
+                      setInput(
+                        e.target
+                          .value
+                      )
+                    }
+                    onKeyDown={(
+                      e
+                    ) => {
+                      if (
+                        e.key ===
+                          "Enter" &&
+                        !e.shiftKey
+                      ) {
+                        e.preventDefault();
+
+                        handleSend();
+                      }
+                    }}
+                    className={`w-full resize-none rounded-2xl px-4 py-3 border outline-none text-sm sm:text-base ${inputBg}`}
+                  />
+
+                  <div className="flex items-center justify-between mt-3 px-1 gap-2">
+                    <div className="flex items-center gap-2 text-xs opacity-60">
+                      <Lightbulb
+                        size={14}
+                        className="text-yellow-400"
+                      />
+
+                      <span className="hidden sm:block">
+                        Free users
+                        get 5 AI
+                        messages daily
+                      </span>
+
+                      <span className="sm:hidden">
+                        5 free daily
+                        AI chats
+                      </span>
+                    </div>
+
+                    <div className="text-xs opacity-50">
+                      Enter ↵
+                    </div>
+                  </div>
+                </div>
+
+                {/* SEND */}
+
+                <button
+                  onClick={
+                    handleSend
                   }
-                  className="hidden"
-                />
-              </label>
+                  disabled={
+                    loading
+                  }
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shrink-0 disabled:opacity-50"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
 
-              {/* INPUT */}
-
-              <input
-                type="text"
-                placeholder="Ask anything..."
-                value={input}
-                onChange={(e) =>
-                  setInput(
-                    e.target.value
-                  )
-                }
-                onKeyDown={(e) =>
-                  e.key === "Enter" &&
-                  handleSend()
-                }
-                className={`flex-1 shrink h-10 rounded-2xl px-4 border outline-none text-sm sm:text-base ${inputBg}`}
-              />
-
-              {/* SEND */}
-
-              <button
-                onClick={handleSend}
-                className="w-10 h-10 rounded-2xl bg-linear-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition flex items-center justify-center text-white shadow-lg shrink-0"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-
-            </div>
-
-            {/* TIP */}
-
-            <div className="mt-4 flex items-start gap-3 text-xs sm:text-sm opacity-70">
-              <Lightbulb
-                size={16}
-                className="text-yellow-500 shrink-0 mt-0.5"
-              />
-
-              <p className="leading-relaxed">
-                Try prompts like
-                “Explain this topic”,
-                “Generate exam
-                questions”, or “Teach
-                me like a beginner”.
-              </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* =========================================================
-          UPGRADE MODAL
-      ========================================================= */}
+      {/* MODAL */}
 
       {showUpgrade && (
-        <div className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm flex items-center justify-center px-3">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center px-4">
+
           <div
-            className={`${card} w-full max-w-md rounded-3xl p-6 relative shadow-2xl animate-in fade-in zoom-in duration-300`}
+            className={`${card} w-full max-w-md rounded-[32px] p-7 relative`}
           >
-
-            {/* CLOSE */}
-
             <button
               onClick={() =>
                 setShowUpgrade(
                   false
                 )
               }
-              className="absolute top-4 right-4 opacity-60 hover:opacity-100"
+              className="absolute top-5 right-5 opacity-60"
             >
               <X size={20} />
             </button>
 
             <div className="text-center">
 
-              {/* ICON */}
-
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mx-auto flex items-center justify-center text-white shadow-xl">
-                <Crown className="w-10 h-10" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mx-auto flex items-center justify-center text-white shadow-2xl">
+                <Crown className="w-11 h-11" />
               </div>
 
-              {/* TITLE */}
-
-              <h2 className="text-2xl font-black mt-5">
+              <h2 className="text-3xl font-black mt-6">
                 Upgrade Tokens
               </h2>
 
-              <p className="text-sm opacity-70 mt-2 leading-relaxed">
-                Continue chatting
-                with AI by purchasing
-                more tokens.
+              <p className="text-sm opacity-70 mt-3">
+                You've used all
+                your free daily
+                messages.
               </p>
 
-              {/* CARD */}
-
               <div
-                className={`mt-6 rounded-3xl p-5 border ${
+                className={`mt-7 rounded-[28px] p-6 border ${
                   dark
-                    ? "bg-[#1b2435] border-white/10"
+                    ? "bg-[#121a2d] border-white/10"
                     : "bg-gray-50 border-gray-200"
                 }`}
               >
-                <p className="text-lg font-bold">
-                  AI Premium Pack
-                </p>
+                <div className="flex items-center justify-center gap-2 text-indigo-400 text-sm font-semibold">
+                  <Sparkles size={15} />
+                  PREMIUM PACK
+                </div>
 
-                <h1 className="text-5xl font-black text-indigo-500 mt-2">
+                <h1 className="text-6xl font-black text-indigo-500 mt-3">
                   1500
                 </h1>
 
                 <p className="opacity-60 text-sm">
-                  Tokens
+                  Tokens Included
                 </p>
 
-                <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-500 text-sm font-semibold">
+                <div className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-green-500/10 text-green-400 text-sm font-bold">
                   <ShieldCheck
                     size={15}
                   />
@@ -1095,11 +1444,9 @@ const AIAssistant = ({ dark = true }) => {
                 </div>
               </div>
 
-              {/* BUTTON */}
-
               <button
                 onClick={payNow}
-                className="w-full mt-6 h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition text-white font-bold"
+                className="w-full mt-7 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-lg"
               >
                 Buy Tokens
               </button>
@@ -1110,7 +1457,7 @@ const AIAssistant = ({ dark = true }) => {
                     false
                   )
                 }
-                className="mt-4 text-sm opacity-60"
+                className="mt-5 text-sm opacity-60"
               >
                 Maybe later
               </button>
