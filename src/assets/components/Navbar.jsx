@@ -1,40 +1,70 @@
-import React, { useState } from 'react'
-import { Images } from './../data/data';
-import { LightbulbIcon, LightbulbOffIcon, MenuIcon, MoonIcon, SunIcon, User, X } from 'lucide-react';
-import ProfilePhoto from './ProfilePhoto';
+import React, { useContext } from "react";
+import { Images } from "./../data/data";
+import { MenuIcon, MoonIcon, SunIcon, X } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
-import { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 const Navbar = ({ dark, setDark, setMenuOpen, menuOpen }) => {
   const { user } = useContext(AuthContext);
-  const toggleTheme = () => {
-    setDark(!dark);
-  };
+
+  const toggleTheme = () => setDark(!dark);
 
   return (
-    <div className={`fixed z-300 top-0 left-0 w-full flex justify-between items-center py-3 px-[5%] ${dark ? 'bg-slate-950 text-white' : 'bg-slate-100' }`}>
-      <Link to={'/dashboard'}>
-      <img src={dark ? Images.dark_logo : Images.light_logo} alt="unihelp.ng" className='w-30 md:w-40'/>
-      </Link>
-      <span className='flex items-center gap-2'>
+    <header
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b ${
+        dark
+          ? "bg-slate-950 text-white border-slate-800"
+          : "bg-white text-slate-900 border-slate-200"
+      }`}
+    >
+      <div className="flex items-center justify-between px-5 md:px-10 py-3">
 
-        <button
-        onClick={toggleTheme}
-        className={`px-2 py-2 border-white border-2 text-white rounded-full ${!dark ? 'bg-indigo-950': 'bg-transparent'}`}
-      >
-        {dark ? <SunIcon/> : <MoonIcon/>}
-      </button>
-      
-      <span onClick={(e)=> setMenuOpen(!menuOpen)} className='md:hidden'>
-        {menuOpen ? <X size={30}/> :<MenuIcon size={30}/> }
-        
-        
-      </span>
-      </span>
-       
-    </div>
-  )
-}
+        {/* Logo */}
+        <Link to="/dashboard" className="flex items-center">
+          <img
+            src={dark ? Images.dark_logo : Images.light_logo}
+            alt="unihelp.ng"
+            className="w-28 md:w-36 transition-all"
+          />
+        </Link>
 
-export default Navbar
+        {/* Right Actions */}
+        <div className="flex items-center gap-3 md:gap-4">
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-full border transition-all duration-300 hover:scale-105 ${
+              dark
+                ? "border-slate-700 hover:bg-slate-800"
+                : "border-slate-300 hover:bg-slate-100"
+            }`}
+            aria-label="Toggle Theme"
+          >
+            {dark ? <SunIcon size={20} /> : <MoonIcon size={20} />}
+          </button>
+
+          {/* User Avatar (optional if user exists) */}
+          {user && (
+            <div className="hidden md:flex items-center gap-2">
+              <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold">
+                {user?.name?.charAt(0) || "U"}
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden p-2 rounded-md transition hover:bg-slate-200 dark:hover:bg-slate-800"
+            aria-label="Toggle Menu"
+          >
+            {menuOpen ? <X size={26} /> : <MenuIcon size={26} />}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Navbar;
