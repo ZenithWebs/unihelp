@@ -396,7 +396,7 @@ export default function TutorialDetails({
   if (!tutorial) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center ${
+        className={`min-h-screen md:pt-20 flex items-center justify-center ${
           dark
             ? "bg-[#0f172a] text-white"
             : "bg-gray-100 text-black"

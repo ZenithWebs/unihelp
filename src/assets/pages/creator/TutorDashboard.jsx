@@ -19,6 +19,7 @@ import {
   Eye,
   PlusCircle,
   Wallet,
+  CircleDollarSignIcon,
 } from "lucide-react";
 
 export default function TutorDashboard({ dark }) {
@@ -146,10 +147,17 @@ export default function TutorDashboard({ dark }) {
 
         <Link
           to="/create-tutorial"
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
-        >
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl">
           <PlusCircle size={20} />
           Upload Tutorial
+        </Link>
+
+        <Link
+          to="/earnings"
+          className="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-3 rounded-xl"
+        >
+          <CircleDollarSignIcon size={25} />
+          Withdraw
         </Link>
       </div>
 

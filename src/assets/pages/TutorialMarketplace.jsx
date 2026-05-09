@@ -175,7 +175,7 @@ export default function TutorialMarketplace({
 
   return (
     <div
-      className={`min-h-screen p-6 ${
+      className={`min-h-screen md:pt-20 p-6 ${
         dark
           ? "bg-[#0f172a] text-white"
           : "bg-gray-100 text-black"

@@ -19,11 +19,9 @@ import NewsFeed from './assets/pages/NewsFeed';
 import Community from './assets/pages/Community';
 import TutorialPage from './assets/pages/Tutorials';
 import MyHostels from './assets/pages/MyUploadedHostel';
-import AdminHostelApproval from './assets/pages/AdminHostelApproval';
 import InstallPrompt from './assets/components/InstallPrompt';
 import TutorialMarketplace from './assets/pages/TutorialMarketplace';
 import { Database } from 'lucide-react';
-import AdminDashboard from './assets/pages/AdminDashboard';
 import Contact from './assets/pages/Contact';
 import Report from './assets/pages/Report';
 import StudentMarketplace from './assets/pages/StudentMarketplace';
@@ -35,9 +33,9 @@ import TutorDashboard from './assets/pages/creator/TutorDashboard';
 import TutorialDetails from './assets/pages/TutorialDetails';
 import StudentPurchases from './assets/pages/StudentPurchases';
 import ProtectedPdfViewer from './assets/pages/ProtectedPdfViewer';
-import AdminPayments from './assets/pages/AdminPayment';
 import TutorEarnings from './assets/pages/creator/TutorEarnings';
 import AdminWithdrawals from './assets/pages/AdminWithdrawals';
+import AdminPanel from './assets/pages/AdminPanel';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -92,21 +90,11 @@ useEffect(() => {
 
     <InstallPrompt/>
       <div className={dark ? "bg-slate-900 text-white" : "bg-white text-black"}>
-        <Routes>
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboard dark={dark} /></ProtectedRoute>} />
-          
-          
-
-
-          
-
-
+        <Routes> 
           <Route path='/' element={<Login dark={dark}/>}/>
           <Route path='/register' element={<Signup dark={dark}/>}/>
           <Route element={<DashboardLayout setMenuOpen={setMenuOpen}      menuOpen={menuOpen}  dark={dark}/>}>
             <Route path='/dashboard' element={ <ProtectedRoute><Dashboard dark={dark}/></ProtectedRoute> }/>
-
-            <Route path="/adminpayments" element={<ProtectedRoute><AdminPayments dark={dark} /></ProtectedRoute>} />
 
             <Route path='/CGPA' element={<ProtectedRoute><CGPA dark={dark}/></ProtectedRoute>}/>
 
@@ -142,7 +130,7 @@ useEffect(() => {
             
             <Route path='/myhostels' element={<ProtectedRoute> <MyHostels dark={dark}/> </ProtectedRoute>}/>
 
-            <Route path='/adminhostelapproval' element={<ProtectedRoute> <AdminHostelApproval dark={dark}/> </ProtectedRoute>}/>
+            <Route path='/adminpanel' element={<ProtectedRoute> <AdminPanel dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/newsfeed' element={<ProtectedRoute> <NewsFeed dark={dark}/> </ProtectedRoute>}/>
 

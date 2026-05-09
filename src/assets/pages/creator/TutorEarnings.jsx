@@ -103,7 +103,7 @@ export default function TutorEarnings({ dark }) {
 
   return (
     <div
-      className={`min-h-screen p-6 ${
+      className={`min-h-screen md:pt-20 p-6 ${
         dark
           ? "bg-[#0f172a] text-white"
           : "bg-gray-100 text-black"
@@ -123,7 +123,7 @@ export default function TutorEarnings({ dark }) {
           }`}
         >
           <div className="flex items-center gap-2">
-            <TrendingUp />
+            <TrendingUp className="text-green-500"/>
             <p>Total Earnings</p>
           </div>
 
@@ -138,7 +138,7 @@ export default function TutorEarnings({ dark }) {
           }`}
         >
           <div className="flex items-center gap-2">
-            <Wallet />
+            <Wallet className="text-yellow-500"/>
             <p>Available Balance</p>
           </div>
 
@@ -178,11 +178,10 @@ export default function TutorEarnings({ dark }) {
             }
             className="p-3 rounded-xl text-black"
           >
-            <option value="bank">Bank</option>
+            <option value="kuda">Kuda</option>
             <option value="opay">Opay</option>
-            <option value="palmpay">
-              PalmPay
-            </option>
+            <option value="palmpay">PalmPay</option>
+            <option value="moniepoint">MoniePoint</option>
           </select>
 
           <input
