@@ -36,6 +36,7 @@ import ProtectedPdfViewer from './assets/pages/ProtectedPdfViewer';
 import TutorEarnings from './assets/pages/creator/TutorEarnings';
 import AdminWithdrawals from './assets/pages/AdminWithdrawals';
 import AdminPanel from './assets/pages/AdminPanel';
+import PremiumSubscriptionPage from './assets/pages/PremiumSubscriptionPage';
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -143,6 +144,8 @@ useEffect(() => {
             <Route path='/contact' element={<ProtectedRoute> <Contact dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='/report' element={<ProtectedRoute> <Report dark={dark}/> </ProtectedRoute>}/>
+
+            <Route path='/premium' element={<ProtectedRoute> <PremiumSubscriptionPage dark={dark}/> </ProtectedRoute>}/>
 
             <Route path='*' element={ <div className='flex flex-col justify-center items-center bg-inherit fixed top-0 left-0 h-screen w-full'><h1 className='font-black text-6xl text-center'>404 </h1> <p className='font-bold'>Page not found</p> <Link to={'/dashboard'} className='bg-indigo-500 flex text-white p-2.5 rounded'>Dashboard</Link> </div> } />
           </Route>

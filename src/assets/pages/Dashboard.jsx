@@ -38,6 +38,7 @@ import { db } from "../../firebase/config";
 import SmartFeed from "../components/SmartFeed";
 
 import DonationPopupSystem from "../components/DonationPopup";
+import AdsBanner from "../components/AdsBanner";
 
 const Dashboard = ({ dark }) => {
   const [records, setRecords] = useState([]);
@@ -226,9 +227,36 @@ const Dashboard = ({ dark }) => {
           </div>
         </div>
       </div>
-
       {/* QUICK ACCESS */}
       <div className="space-y-6">
+
+        <AdsBanner
+  dark={dark}
+  autoSlide={true}
+  ads={[
+    {
+      title: "UniHelp Premium 🚀",
+      description:
+        "Unlock premium tools and promote your hostel faster.",
+      buttonText: "Upgrade",
+      buttonLink: "/premium",
+    },
+    {
+      title: "Need a Hostel?",
+      description:
+        "Browse verified student hostels near your campus.",
+      buttonText: "Explore",
+      buttonLink: "/hostelmarketplace",
+    },
+    {
+      title: "Earn as a Tutor 💰",
+      description:
+        "Upload tutorials and start earning from students.",
+      buttonText: "Start Now",
+      buttonLink: "/tutorialmarketplace",
+    },
+  ]}
+/>
 
         {/* ACADEMIC */}
         <div>

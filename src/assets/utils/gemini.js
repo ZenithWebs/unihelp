@@ -5,5 +5,5 @@ const genAI = new GoogleGenerativeAI(
 );
 
 export const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-lite", // safer stable model
+  model: "gemini-1.5-flash", // safer stable model
 });
